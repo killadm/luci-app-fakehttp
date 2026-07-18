@@ -8,7 +8,7 @@
 			},
 			"file": {
 				"/etc/crontabs/root": [ "read" ],
-				"/var/log/fakehttp.log": [ "read" ],
+				"/var/log/fakehttp/fakehttp.log": [ "read" ],
 				"/sbin/logread": [ "exec" ]
 			}
 		},

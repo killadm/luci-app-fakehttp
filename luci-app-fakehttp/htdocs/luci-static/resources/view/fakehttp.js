@@ -196,7 +196,7 @@ return view.extend({
 			L.resolveDefault(callServiceList('fakehttp'), {}),
 			L.resolveDefault(fs.read('/etc/crontabs/root'), ''),
 			L.resolveDefault(fs.exec('/sbin/logread', [ '-e', 'fakehttp' ]), { stdout: '' }),
-			L.resolveDefault(fs.read('/var/log/fakehttp.log'), '')
+			L.resolveDefault(fs.read('/var/log/fakehttp/fakehttp.log'), '')
 		]);
 	},
 
@@ -236,7 +236,7 @@ return view.extend({
 		o.inputtitle = '停止';
 		o.inputstyle = 'reset';
 		o.onclick = function() {
-			return runInitAction('stop', 'FakeHTTP 已停止');
+			return runInitAction('stop_now', 'FakeHTTP 已停止');
 		};
 
 		o = s.taboption('status', form.Button, '_restart', '重启服务');
@@ -389,7 +389,8 @@ return view.extend({
 		o.rmempty = false;
 
 		o = s.taboption('advanced', form.Value, 'log_file', '日志文件');
-		o.placeholder = '/var/log/fakehttp.log';
+		o.default = '/var/log/fakehttp/fakehttp.log';
+		o.placeholder = '/var/log/fakehttp/fakehttp.log';
 		o.rmempty = true;
 		o.validate = function(sectionId, value) {
 			if (!value)
@@ -445,7 +446,7 @@ return view.extend({
 		o.rawhtml = true;
 		o.cfgvalue = function() {
 			return renderLogBlock('系统日志', logOutput, 200) +
-				renderLogBlock('文件日志 /var/log/fakehttp.log', fileLog, 200);
+				renderLogBlock('文件日志 /var/log/fakehttp/fakehttp.log', fileLog, 200);
 		};
 
 		return m.render();

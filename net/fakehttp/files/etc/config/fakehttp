@@ -21,7 +21,7 @@ config fakehttp 'main'
 	option skip_firewall '0'
 	option use_iptables '0'
 	option silent '0'
-	option log_file '/var/log/fakehttp.log'
+	option log_file '/var/log/fakehttp/fakehttp.log'
 
 	option scheduled_restart '0'
 	option restart_mode 'daily'

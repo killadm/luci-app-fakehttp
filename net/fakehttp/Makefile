@@ -67,7 +67,7 @@ endef
 define Package/fakehttp/prerm
 #!/bin/sh
 [ -n "$$IPKG_INSTROOT" ] || {
-	/etc/init.d/fakehttp stop >/dev/null 2>&1 || true
+	/etc/init.d/fakehttp stop_now >/dev/null 2>&1 || true
 	/etc/init.d/fakehttp clear_cron >/dev/null 2>&1 || true
 	/etc/init.d/fakehttp disable >/dev/null 2>&1 || true
 }
