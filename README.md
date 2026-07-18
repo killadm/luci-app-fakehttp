@@ -42,8 +42,6 @@
 
 - `fakehttp_*.ipk`
 - `luci-app-fakehttp_*.ipk`
-- 同一 SDK 构建出的运行依赖 IPK
-- `ipk-list.txt`
 - `sha256sums.txt`
 
 Artifact 名称类似：
@@ -97,35 +95,17 @@ bin/packages/<arch>/fakehttp/
 把 GitHub Actions 或本地 SDK 生成的 IPK 上传到路由器：
 
 ```sh
-opkg install *.ipk
-```
-
-离线安装时不要只安装 `fakehttp_*.ipk`。如果卸载时依赖也被移除了，需要把 artifact 里的依赖 IPK 一起安装。关键运行依赖包括：
-
-- `libnetfilter-queue1`
-- `libnfnetlink0`
-- `libmnl0`
-- `nftables`
-- `kmod-nfnetlink-queue`
-- `kmod-nft-queue`
-
-如果路由器能访问软件源，也可以先执行：
-
-```sh
-opkg update
-opkg install libnetfilter-queue1 libnfnetlink0 libmnl0 nftables kmod-nfnetlink-queue kmod-nft-queue
 opkg install fakehttp_*.ipk luci-app-fakehttp_*.ipk
 ```
 
-如果出现 `Packages for fakehttp found, but incompatible with the architectures configured`，请先确认下载的是和设备一致的 artifact。当前 GitHub Actions 默认构建目标是 ImmortalWrt `24.10.6` `mediatek/filogic`。可在路由器上检查：
+如果依赖未安装，请先确保系统软件源可用，或在固件中预集成依赖：
 
-```sh
-opkg print-architecture
-cat /etc/openwrt_release
-uname -r
-```
-
-不要用 `--force-depends` 或 `--force-architecture` 绕过这类错误；kmod 包必须和固件内核版本匹配。
+- `libnetfilter-queue`
+- `libnfnetlink`
+- `libmnl`
+- `nftables`
+- `kmod-nfnetlink-queue`
+- `kmod-nft-queue`
 
 安装后进入：
 

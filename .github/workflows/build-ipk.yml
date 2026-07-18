@@ -71,12 +71,6 @@ jobs:
           cat > .config <<'EOF'
           CONFIG_PACKAGE_fakehttp=m
           CONFIG_PACKAGE_luci-app-fakehttp=m
-          CONFIG_PACKAGE_libmnl0=m
-          CONFIG_PACKAGE_libnfnetlink0=m
-          CONFIG_PACKAGE_libnetfilter-queue1=m
-          CONFIG_PACKAGE_nftables=m
-          CONFIG_PACKAGE_kmod-nfnetlink-queue=m
-          CONFIG_PACKAGE_kmod-nft-queue=m
           EOF
           make defconfig
 
@@ -91,10 +85,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          find sdk/bin -type f -name '*.ipk' -print -exec cp -v {} artifacts/ \;
-          test -n "$(find artifacts -type f -name 'fakehttp_*.ipk' -print -quit)"
-          test -n "$(find artifacts -type f -name 'luci-app-fakehttp_*.ipk' -print -quit)"
-          find artifacts -maxdepth 1 -type f -name '*.ipk' -printf '%f\n' | sort > artifacts/ipk-list.txt
+          find sdk/bin/packages -type f \( \
+            -name 'fakehttp_*.ipk' -o \
+            -name 'luci-app-fakehttp_*.ipk' \
+          \) -print -exec cp -v {} artifacts/ \;
+          test -n "$(find artifacts -type f -name '*.ipk' -print -quit)"
           sha256sum artifacts/*.ipk > artifacts/sha256sums.txt
 
       - name: Upload IPK artifacts
