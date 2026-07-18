@@ -384,7 +384,7 @@ reload_service() {
 
 start_now() {
 	START_NOW=1
-	start_service
+	start
 }
 
 stop_now() {
@@ -398,7 +398,7 @@ stop() {
 restart_now() {
 	stop_now || return 1
 	START_NOW=1
-	start_service
+	start
 }
 
 service_triggers() {

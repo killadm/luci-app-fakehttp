@@ -14,6 +14,13 @@ var callServiceList = rpc.declare({
 	expect: { '': {} }
 });
 
+var callUciCommit = rpc.declare({
+	object: 'uci',
+	method: 'commit',
+	params: [ 'config' ],
+	expect: { '': {} }
+});
+
 var CRON_BEGIN = '# BEGIN fakehttp scheduled restart';
 
 function escapeHTML(value) {
@@ -179,10 +186,10 @@ function runInitAction(action, successText) {
 	});
 }
 
-function saveApplyAndRun(map, action, successText) {
+function saveCommitAndRun(map, action, successText) {
 	return map.save(null, false)
 		.then(function() {
-			return uci.apply(10);
+			return callUciCommit('fakehttp');
 		})
 		.then(function() {
 			return runInitAction(action, successText);
@@ -229,7 +236,7 @@ return view.extend({
 		o.inputtitle = '启动';
 		o.inputstyle = 'apply';
 		o.onclick = function() {
-			return saveApplyAndRun(m, 'restart_now', 'FakeHTTP 已启动');
+			return saveCommitAndRun(m, 'restart_now', 'FakeHTTP 已启动');
 		};
 
 		o = s.taboption('status', form.Button, '_stop', '停止服务');
@@ -243,14 +250,14 @@ return view.extend({
 		o.inputtitle = '重启';
 		o.inputstyle = 'reload';
 		o.onclick = function() {
-			return saveApplyAndRun(m, 'restart_now', 'FakeHTTP 已重启');
+			return saveCommitAndRun(m, 'restart_now', 'FakeHTTP 已重启');
 		};
 
 		o = s.taboption('status', form.Button, '_update_cron', '更新定时任务');
 		o.inputtitle = '立即更新';
 		o.inputstyle = 'apply';
 		o.onclick = function() {
-			return saveApplyAndRun(m, 'update_cron', '定时任务已更新');
+			return saveCommitAndRun(m, 'update_cron', '定时任务已更新');
 		};
 
 		o = s.taboption('status', form.Button, '_cleanup', '清理残留规则');
