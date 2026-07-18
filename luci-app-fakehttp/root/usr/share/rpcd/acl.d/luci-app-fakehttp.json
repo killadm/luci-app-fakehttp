@@ -1,0 +1,21 @@
+{
+	"luci-app-fakehttp": {
+		"description": "Grant access to LuCI app FakeHTTP",
+		"read": {
+			"uci": [ "fakehttp" ],
+			"ubus": {
+				"service": [ "list" ]
+			},
+			"file": {
+				"/etc/crontabs/root": [ "read" ],
+				"/sbin/logread": [ "exec" ]
+			}
+		},
+		"write": {
+			"uci": [ "fakehttp" ],
+			"file": {
+				"/etc/init.d/fakehttp": [ "exec" ]
+			}
+		}
+	}
+}

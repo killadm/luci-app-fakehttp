@@ -1,0 +1,30 @@
+config fakehttp 'main'
+	option enabled '0'
+
+	option interface_mode 'custom'
+	list interfaces 'wan'
+
+	option payload_mode 'http'
+	option hostname ''
+	option payload_file ''
+
+	option direction 'both'
+	option ip_family 'both'
+
+	option queue_num '100'
+	option fwmark '0x8000'
+	option fwmask ''
+	option repeat '2'
+	option ttl '3'
+	option dynamic_pct ''
+	option disable_hop_estimation '0'
+	option skip_firewall '0'
+	option use_iptables '0'
+	option silent '0'
+	option log_file '/var/log/fakehttp.log'
+
+	option scheduled_restart '0'
+	option restart_mode 'daily'
+	option restart_time '04:00'
+	option restart_weekday '0'
+	option restart_interval_hours '24'

@@ -1,0 +1,5 @@
+.upstream/
+sdk/
+artifacts/
+*.ipk
+*.tar.zst
