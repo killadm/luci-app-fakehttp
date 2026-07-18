@@ -5,7 +5,7 @@ config fakehttp 'main'
 	list interfaces 'wan'
 
 	option payload_mode 'http'
-	option hostname ''
+	option hostname 'www.speedtest.cn'
 	option payload_file ''
 
 	option direction 'both'

@@ -129,7 +129,7 @@ LuCI -> 服务 -> FakeHTTP
 - `interface_mode`：`custom` 指定接口，`all` 全部接口。
 - `interfaces`：指定接口列表，默认 `wan`。
 - `payload_mode`：`http`、`https`、`custom`。
-- `hostname`：HTTP/HTTPS 混淆主机名。
+- `hostname`：HTTP/HTTPS 混淆主机名，默认 `www.speedtest.cn`。
 - `payload_file`：自定义 payload 文件路径。
 - `direction`：`both`、`inbound`、`outbound`。
 - `ip_family`：`both`、`ipv4`、`ipv6`。

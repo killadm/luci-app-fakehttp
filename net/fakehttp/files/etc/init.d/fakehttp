@@ -23,6 +23,7 @@ EXTRA_HELP="	start_now	Start FakeHTTP once without changing UCI enabled
 	cleanup_rules	Remove stale FakeHTTP firewall rules"
 
 . /lib/functions.sh
+. /lib/functions/network.sh
 
 log_error() {
 	logger -t "$NAME" "ERROR: $*"
@@ -162,6 +163,22 @@ append_optional_arg() {
 	append_arg "$flag" "$value"
 }
 
+resolve_interface() {
+	local input="$1"
+	local dev
+
+	input="${input#@}"
+
+	if network_get_device dev "$input" || network_get_physdev dev "$input"; then
+		[ -n "$dev" ] && {
+			echo "$dev"
+			return 0
+		}
+	fi
+
+	echo "$input"
+}
+
 validate_start_config() {
 	local interface_mode interfaces payload_mode hostname payload_file direction ip_family dynamic_pct disable_hop_estimation log_file
 	local queue_num repeat ttl
@@ -298,12 +315,13 @@ start_service() {
 
 	procd_open_instance "$NAME"
 	procd_set_param command "$PROG"
+	network_flush_cache
 
 	if [ "$interface_mode" = "all" ]; then
 		append_arg "-a"
 	else
 		for iface in $interfaces; do
-			append_arg "-i" "$iface"
+			append_arg "-i" "$(resolve_interface "$iface")"
 		done
 	fi
 

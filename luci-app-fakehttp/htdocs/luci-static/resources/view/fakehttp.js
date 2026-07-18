@@ -112,6 +112,13 @@ function tailText(text, count) {
 	return lines.join('\n') || '暂无 FakeHTTP 日志';
 }
 
+function renderLogBlock(title, text, count) {
+	return '<h3>' + escapeHTML(title) + '</h3>' +
+		'<pre style="max-height:32em;overflow:auto;white-space:pre-wrap">' +
+			escapeHTML(tailText(text, count)) +
+		'</pre>';
+}
+
 function validateRange(min, max, message, allowEmpty) {
 	return function(sectionId, value) {
 		var n;
@@ -172,13 +179,24 @@ function runInitAction(action, successText) {
 	});
 }
 
+function saveApplyAndRun(map, action, successText) {
+	return map.save(null, false)
+		.then(function() {
+			return uci.apply(10);
+		})
+		.then(function() {
+			return runInitAction(action, successText);
+		});
+}
+
 return view.extend({
 	load: function() {
 		return Promise.all([
 			uci.load('fakehttp'),
 			L.resolveDefault(callServiceList('fakehttp'), {}),
 			L.resolveDefault(fs.read('/etc/crontabs/root'), ''),
-			L.resolveDefault(fs.exec('/sbin/logread', [ '-e', 'fakehttp' ]), { stdout: '' })
+			L.resolveDefault(fs.exec('/sbin/logread', [ '-e', 'fakehttp' ]), { stdout: '' }),
+			L.resolveDefault(fs.read('/var/log/fakehttp.log'), '')
 		]);
 	},
 
@@ -186,6 +204,7 @@ return view.extend({
 		var services = data[1];
 		var crontab = data[2] || '';
 		var logOutput = data[3] && data[3].stdout ? data[3].stdout : '';
+		var fileLog = data[4] || '';
 		var m, s, o, enabledOpt, ifaceModeOpt, payloadModeOpt, noHop;
 
 		m = new form.Map('fakehttp', 'FakeHTTP');
@@ -198,6 +217,7 @@ return view.extend({
 		s.tab('basic', '基础设置');
 		s.tab('advanced', '高级设置');
 		s.tab('schedule', '定时重启');
+		s.tab('logs', '日志');
 
 		o = s.taboption('status', form.DummyValue, '_runtime', '当前状态');
 		o.rawhtml = true;
@@ -209,7 +229,7 @@ return view.extend({
 		o.inputtitle = '启动';
 		o.inputstyle = 'apply';
 		o.onclick = function() {
-			return runInitAction('start_now', 'FakeHTTP 已启动');
+			return saveApplyAndRun(m, 'restart_now', 'FakeHTTP 已启动');
 		};
 
 		o = s.taboption('status', form.Button, '_stop', '停止服务');
@@ -223,14 +243,14 @@ return view.extend({
 		o.inputtitle = '重启';
 		o.inputstyle = 'reload';
 		o.onclick = function() {
-			return runInitAction('restart_now', 'FakeHTTP 已重启');
+			return saveApplyAndRun(m, 'restart_now', 'FakeHTTP 已重启');
 		};
 
 		o = s.taboption('status', form.Button, '_update_cron', '更新定时任务');
 		o.inputtitle = '立即更新';
 		o.inputstyle = 'apply';
 		o.onclick = function() {
-			return runInitAction('update_cron', '定时任务已更新');
+			return saveApplyAndRun(m, 'update_cron', '定时任务已更新');
 		};
 
 		o = s.taboption('status', form.Button, '_cleanup', '清理残留规则');
@@ -238,14 +258,6 @@ return view.extend({
 		o.inputstyle = 'remove';
 		o.onclick = function() {
 			return runInitAction('cleanup_rules', '残留规则清理完成');
-		};
-
-		o = s.taboption('status', form.DummyValue, '_log', '最近日志');
-		o.rawhtml = true;
-		o.cfgvalue = function() {
-			return '<pre style="max-height:24em;overflow:auto;white-space:pre-wrap">' +
-				escapeHTML(tailText(logOutput, 80)) +
-			'</pre>';
 		};
 
 		enabledOpt = s.taboption('basic', form.Flag, 'enabled', '启用');
@@ -257,9 +269,8 @@ return view.extend({
 		ifaceModeOpt.default = 'custom';
 		ifaceModeOpt.rmempty = false;
 
-		o = s.taboption('basic', widgets.DeviceSelect, 'interfaces', '绑定接口');
+		o = s.taboption('basic', widgets.NetworkSelect, 'interfaces', '绑定接口');
 		o.multiple = true;
-		o.noaliases = true;
 		o.rmempty = true;
 		o.depends('interface_mode', 'custom');
 		o.validate = function(sectionId, value) {
@@ -281,7 +292,8 @@ return view.extend({
 		payloadModeOpt.rmempty = false;
 
 		o = s.taboption('basic', form.Value, 'hostname', '主机名');
-		o.placeholder = 'www.example.com';
+		o.default = 'www.speedtest.cn';
+		o.placeholder = 'www.speedtest.cn';
 		o.rmempty = true;
 		o.depends('payload_mode', 'http');
 		o.depends('payload_mode', 'https');
@@ -427,6 +439,13 @@ return view.extend({
 		o.rawhtml = true;
 		o.cfgvalue = function() {
 			return '<div class="cbi-value-field">' + escapeHTML(getScheduleText(crontab)) + '</div>';
+		};
+
+		o = s.taboption('logs', form.DummyValue, '_logs', '近期日志');
+		o.rawhtml = true;
+		o.cfgvalue = function() {
+			return renderLogBlock('系统日志', logOutput, 200) +
+				renderLogBlock('文件日志 /var/log/fakehttp.log', fileLog, 200);
 		};
 
 		return m.render();
