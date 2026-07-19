@@ -214,12 +214,12 @@ function validateMark(sectionId, value) {
 	if (value == null || value === '')
 		return true;
 
-	if (!/^(0x[0-9a-fA-F]+|[1-9][0-9]*)$/.test(value))
-		return '请输入非零十进制数或十六进制数，例如 0x8000';
+	if (!/^(0x[0-9a-fA-F]+|0|[1-9][0-9]*)$/.test(value))
+		return '请输入十进制数或十六进制数，例如 0x8000';
 
 	n = Number(value);
-	if (!Number.isFinite(n) || n < 1 || n > 0xffffffff)
-		return '标记值范围为 1 到 4294967295';
+	if (!Number.isFinite(n) || n < 0 || n > 0xffffffff)
+		return '标记值范围为 0 到 4294967295';
 
 	return true;
 }

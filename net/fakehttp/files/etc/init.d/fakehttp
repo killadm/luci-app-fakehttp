@@ -63,6 +63,39 @@ is_time() {
 	[ "$hour" -ge 0 ] && [ "$hour" -le 23 ] && [ "$minute" -ge 0 ] && [ "$minute" -le 59 ]
 }
 
+is_uint32() {
+	is_uint "$1" && [ "$1" -ge 0 ] && [ "$1" -le 4294967295 ]
+}
+
+is_mark() {
+	local value="$1"
+	local hex
+
+	case "$value" in
+		'')
+			return 1
+			;;
+		0x*)
+			hex="${value#0x}"
+			;;
+		0X*)
+			hex="${value#0X}"
+			;;
+		*)
+			is_uint32 "$value"
+			return "$?"
+			;;
+	esac
+
+	case "$hex" in
+		''|*[!0-9a-fA-F]*)
+			return 1
+			;;
+	esac
+
+	[ "${#hex}" -le 8 ]
+}
+
 cron_reload() {
 	/etc/init.d/cron reload >/dev/null 2>&1 || /etc/init.d/cron restart >/dev/null 2>&1 || true
 }
@@ -440,13 +473,15 @@ append_payload_section() {
 
 validate_start_config() {
 	local interface_mode interfaces direction ip_family dynamic_pct disable_hop_estimation log_file
-	local queue_num repeat ttl log_max_size_kb log_rotate_count
+	local queue_num fwmark fwmask repeat ttl log_max_size_kb log_rotate_count
 
 	config_get interface_mode "$SECTION" interface_mode "custom"
 	config_get interfaces "$SECTION" interfaces
 	config_get direction "$SECTION" direction "both"
 	config_get ip_family "$SECTION" ip_family "both"
 	config_get queue_num "$SECTION" queue_num "100"
+	config_get fwmark "$SECTION" fwmark "0x8000"
+	config_get fwmask "$SECTION" fwmask
 	config_get repeat "$SECTION" repeat "2"
 	config_get ttl "$SECTION" ttl "3"
 	config_get dynamic_pct "$SECTION" dynamic_pct
@@ -478,8 +513,18 @@ validate_start_config() {
 			;;
 	esac
 
-	is_uint "$queue_num" && [ "$queue_num" -ge 1 ] || {
+	is_uint "$queue_num" && [ "$queue_num" -ge 1 ] && [ "$queue_num" -le 4294967295 ] || {
 		log_error "invalid queue_num: $queue_num"
+		return 1
+	}
+
+	[ -z "$fwmark" ] || is_mark "$fwmark" || {
+		log_error "invalid fwmark: $fwmark"
+		return 1
+	}
+
+	[ -z "$fwmask" ] || is_mark "$fwmask" || {
+		log_error "invalid fwmask: $fwmask"
 		return 1
 	}
 
