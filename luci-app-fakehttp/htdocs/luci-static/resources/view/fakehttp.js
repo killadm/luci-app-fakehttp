@@ -224,6 +224,16 @@ function validateMark(sectionId, value) {
 	return true;
 }
 
+function validateLogPath(sectionId, value) {
+	if (!value)
+		return true;
+
+	if (!/^\/var\/log\/fakehttp\/[A-Za-z0-9._-]+$/.test(value) || value.indexOf('..') >= 0)
+		return '日志文件必须位于 /var/log/fakehttp/，文件名只能包含字母、数字、点、下划线和短横线';
+
+	return true;
+}
+
 function runInitAction(action, successText) {
 	return fs.exec('/etc/init.d/fakehttp', [ action ]).then(function(res) {
 		if (res.code !== 0) {
@@ -454,13 +464,7 @@ return view.extend({
 		o.default = '/var/log/fakehttp/fakehttp.log';
 		o.placeholder = '/var/log/fakehttp/fakehttp.log';
 		o.rmempty = true;
-		o.validate = function(sectionId, value) {
-			if (!value)
-				return true;
-			if (value.charAt(0) !== '/')
-				return '请输入绝对路径';
-			return true;
-		};
+		o.validate = validateLogPath;
 
 		o = s.taboption('advanced', form.Value, 'log_max_size_kb', '日志轮转大小（KB）');
 		o.default = '512';
