@@ -424,8 +424,6 @@ validate_payload_section() {
 	config_get type "$section" type "http"
 	config_get value "$section" value
 
-	PAYLOAD_COUNT=$((PAYLOAD_COUNT + 1))
-
 	case "$type" in
 		http|https)
 			[ -n "$value" ] || {
