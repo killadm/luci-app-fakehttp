@@ -10,7 +10,7 @@
 
 ## 功能
 
-- 支持 HTTP Host、HTTPS SNI、自定义二进制 payload 三种混淆载荷。
+- 支持 HTTP Host、HTTPS SNI、自定义二进制 payload 三种混淆载荷，可配置多条并轮换使用。
 - 支持指定接口或全部接口。
 - 支持入站、出站、双向处理。
 - 支持 IPv4、IPv6、双栈模式。
@@ -113,7 +113,7 @@ opkg install fakehttp_*.ipk luci-app-fakehttp_*.ipk
 LuCI -> 服务 -> FakeHTTP
 ```
 
-默认服务不会立即运行，需要填写主机名和接口后手动启用。
+默认服务不会立即运行，确认接口与负载选项后手动启用。
 
 ## 配置说明
 
@@ -128,15 +128,44 @@ LuCI -> 服务 -> FakeHTTP
 - `enabled`：是否启用服务。
 - `interface_mode`：`custom` 指定接口，`all` 全部接口。
 - `interfaces`：指定接口列表，默认 `wan`。
-- `payload_mode`：`http`、`https`、`custom`。
-- `hostname`：HTTP/HTTPS 混淆主机名，默认 `www.speedtest.cn`。
 - `log_file`：FakeHTTP 文件日志，默认 `/var/log/fakehttp/fakehttp.log`。
-- `payload_file`：自定义 payload 文件路径。
 - `direction`：`both`、`inbound`、`outbound`。
 - `ip_family`：`both`、`ipv4`、`ipv6`。
 - `queue_num`：NFQUEUE 编号，默认 `100`。
 - `scheduled_restart`：是否启用定时重启。
 - `restart_mode`：`daily`、`weekly`、`interval`。
+
+负载选项使用独立的 `config payload` 段：
+
+```text
+config payload
+	option type 'http'
+	option value 'www.speedtest.cn'
+```
+
+`type` 与 FakeHTTP 参数对应关系：
+
+- `http`：对应 `-h <hostname>`，生成 HTTP GET payload，Host 为指定主机名。
+- `https`：对应 `-e <hostname>`，生成 HTTPS Client Hello payload，SNI 为指定主机名。
+- `custom`：对应 `-b <file>`，使用指定二进制文件作为 TCP payload，文件路径必须是绝对路径。
+
+可以配置多条负载，服务启动时会按配置顺序传给 FakeHTTP：
+
+```text
+config payload
+	option type 'http'
+	option value 'www01.example.com'
+
+config payload
+	option type 'https'
+	option value 'tls01.example.com'
+
+config payload
+	option type 'custom'
+	option value '/root/payload01.bin'
+```
+
+FakeHTTP 会轮换使用这些 payload。重复项会原样保留，可通过重复添加同一主机名或文件调整出现比例。
 
 服务管理：
 

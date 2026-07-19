@@ -195,7 +195,7 @@ return view.extend({
 		var crontab = data[2] || '';
 		var logOutput = data[3] && data[3].stdout ? data[3].stdout : '';
 		var fileLog = data[4] || '';
-		var m, s, o, enabledOpt, ifaceModeOpt, payloadModeOpt, noHop;
+		var m, s, p, o, enabledOpt, ifaceModeOpt, payloadTypeOpt, noHop;
 
 		m = new form.Map('fakehttp', 'FakeHTTP');
 
@@ -274,47 +274,6 @@ return view.extend({
 			return true;
 		};
 
-		payloadModeOpt = s.taboption('basic', form.ListValue, 'payload_mode', '混淆载荷');
-		payloadModeOpt.value('http', 'HTTP Host');
-		payloadModeOpt.value('https', 'HTTPS SNI');
-		payloadModeOpt.value('custom', '自定义二进制文件');
-		payloadModeOpt.default = 'http';
-		payloadModeOpt.rmempty = false;
-
-		o = s.taboption('basic', form.Value, 'hostname', '主机名');
-		o.default = 'www.speedtest.cn';
-		o.placeholder = 'www.speedtest.cn';
-		o.rmempty = true;
-		o.depends('payload_mode', 'http');
-		o.depends('payload_mode', 'https');
-		o.validate = function(sectionId, value) {
-			var mode = payloadModeOpt.formvalue(sectionId);
-
-			if ((mode === 'http' || mode === 'https') &&
-			    enabledOpt.formvalue(sectionId) === '1' &&
-			    !value)
-				return '启用服务时必须填写主机名';
-
-			if (value && !/^([A-Za-z0-9][A-Za-z0-9-]*\.)*[A-Za-z0-9][A-Za-z0-9-]*\.?$/.test(value))
-				return '请输入有效主机名，例如 www.example.com';
-
-			return true;
-		};
-
-		o = s.taboption('basic', form.Value, 'payload_file', '载荷文件');
-		o.placeholder = '/etc/fakehttp/payload.bin';
-		o.rmempty = true;
-		o.depends('payload_mode', 'custom');
-		o.validate = function(sectionId, value) {
-			if (payloadModeOpt.formvalue(sectionId) === 'custom' &&
-			    enabledOpt.formvalue(sectionId) === '1' &&
-			    !value)
-				return '启用服务时必须填写载荷文件';
-			if (value && value.charAt(0) !== '/')
-				return '请输入绝对路径';
-			return true;
-		};
-
 		o = s.taboption('basic', form.ListValue, 'direction', '处理方向');
 		o.value('both', '双向');
 		o.value('inbound', '入站');
@@ -328,6 +287,40 @@ return view.extend({
 		o.value('ipv6', '仅 IPv6');
 		o.default = 'both';
 		o.rmempty = false;
+
+		p = m.section(form.GridSection, 'payload', '负载选项');
+		p.anonymous = true;
+		p.addremove = true;
+		p.sortable = true;
+		p.addbtntitle = '添加负载';
+
+		payloadTypeOpt = p.option(form.ListValue, 'type', '类型');
+		payloadTypeOpt.value('http', 'HTTP Host (-h)');
+		payloadTypeOpt.value('https', 'HTTPS SNI (-e)');
+		payloadTypeOpt.value('custom', '二进制文件 (-b)');
+		payloadTypeOpt.default = 'http';
+		payloadTypeOpt.rmempty = false;
+
+		o = p.option(form.Value, 'value', '值');
+		o.placeholder = 'www.speedtest.cn';
+		o.rmempty = false;
+		o.validate = function(sectionId, value) {
+			var type = payloadTypeOpt.formvalue(sectionId) || 'http';
+
+			if (!value)
+				return '请填写负载值';
+
+			if (type === 'custom') {
+				if (value.charAt(0) !== '/')
+					return '二进制文件需要填写绝对路径';
+				return true;
+			}
+
+			if (!/^([A-Za-z0-9][A-Za-z0-9-]*\.)*[A-Za-z0-9][A-Za-z0-9-]*\.?$/.test(value))
+				return '请输入有效主机名，例如 www.example.com';
+
+			return true;
+		};
 
 		o = s.taboption('advanced', form.Value, 'queue_num', 'NFQUEUE 编号');
 		o.default = '100';

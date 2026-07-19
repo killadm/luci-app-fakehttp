@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fakehttp
 PKG_VERSION:=0.9.18_git20250627
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/MikeWang000000/FakeHTTP.git
@@ -59,7 +59,7 @@ define Package/fakehttp/postinst
 #!/bin/sh
 [ -n "$$IPKG_INSTROOT" ] || {
 	migrate_fakehttp_config() {
-		local hostname log_file
+		local payload_section log_file
 
 		[ -f /etc/config/fakehttp ] || {
 			[ -f /etc/config/fakehttp-opkg ] && mv /etc/config/fakehttp-opkg /etc/config/fakehttp
@@ -70,12 +70,18 @@ define Package/fakehttp/postinst
 		[ -n "$$(uci -q get fakehttp.main.enabled)" ] || uci -q set fakehttp.main.enabled='0'
 		[ -n "$$(uci -q get fakehttp.main.interface_mode)" ] || uci -q set fakehttp.main.interface_mode='custom'
 		[ -n "$$(uci -q get fakehttp.main.interfaces)" ] || uci -q add_list fakehttp.main.interfaces='wan'
-		[ -n "$$(uci -q get fakehttp.main.payload_mode)" ] || uci -q set fakehttp.main.payload_mode='http'
 
-		hostname="$$(uci -q get fakehttp.main.hostname)"
-		[ -n "$$hostname" ] || uci -q set fakehttp.main.hostname='www.speedtest.cn'
+		uci -q delete fakehttp.main.payload_mode
+		uci -q delete fakehttp.main.hostname
+		uci -q delete fakehttp.main.payload_file
 
-		[ -n "$$(uci -q get fakehttp.main.payload_file)" ] || uci -q set fakehttp.main.payload_file=''
+		payload_section="$$(uci -q show fakehttp | sed -n 's/^fakehttp\.\([^=]*\)=payload$$/\1/p' | head -n 1)"
+		[ -n "$$payload_section" ] || {
+			payload_section="$$(uci -q add fakehttp payload)"
+			uci -q set fakehttp.$$payload_section.type='http'
+			uci -q set fakehttp.$$payload_section.value='www.speedtest.cn'
+		}
+
 		[ -n "$$(uci -q get fakehttp.main.direction)" ] || uci -q set fakehttp.main.direction='both'
 		[ -n "$$(uci -q get fakehttp.main.ip_family)" ] || uci -q set fakehttp.main.ip_family='both'
 		[ -n "$$(uci -q get fakehttp.main.queue_num)" ] || uci -q set fakehttp.main.queue_num='100'

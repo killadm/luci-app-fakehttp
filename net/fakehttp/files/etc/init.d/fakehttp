@@ -191,15 +191,79 @@ resolve_interface() {
 	echo "$input"
 }
 
+validate_payload_section() {
+	local section="$1"
+	local type value
+
+	config_get type "$section" type "http"
+	config_get value "$section" value
+
+	PAYLOAD_COUNT=$((PAYLOAD_COUNT + 1))
+
+	case "$type" in
+		http|https)
+			[ -n "$value" ] || {
+				log_error "payload value is required in $section"
+				PAYLOAD_INVALID=1
+			}
+			;;
+		custom)
+			[ -n "$value" ] || {
+				log_error "payload file is required in $section"
+				PAYLOAD_INVALID=1
+				return 0
+			}
+			case "$value" in
+				/*) ;;
+				*)
+					log_error "payload file must be an absolute path in $section"
+					PAYLOAD_INVALID=1
+					;;
+			esac
+			;;
+		*)
+			log_error "invalid payload type in $section: $type"
+			PAYLOAD_INVALID=1
+			;;
+	esac
+
+	return 0
+}
+
+validate_payloads() {
+	PAYLOAD_COUNT=0
+	PAYLOAD_INVALID=0
+
+	config_foreach validate_payload_section payload
+
+	if [ "$PAYLOAD_COUNT" -eq 0 ]; then
+		log_error "at least one payload is required"
+		return 1
+	fi
+
+	[ "$PAYLOAD_INVALID" -eq 0 ]
+}
+
+append_payload_section() {
+	local section="$1"
+	local type value
+
+	config_get type "$section" type "http"
+	config_get value "$section" value
+
+	case "$type" in
+		https) append_arg "-e" "$value" ;;
+		custom) append_arg "-b" "$value" ;;
+		*) append_arg "-h" "$value" ;;
+	esac
+}
+
 validate_start_config() {
-	local interface_mode interfaces payload_mode hostname payload_file direction ip_family dynamic_pct disable_hop_estimation log_file
+	local interface_mode interfaces direction ip_family dynamic_pct disable_hop_estimation log_file
 	local queue_num repeat ttl
 
 	config_get interface_mode "$SECTION" interface_mode "custom"
 	config_get interfaces "$SECTION" interfaces
-	config_get payload_mode "$SECTION" payload_mode "http"
-	config_get hostname "$SECTION" hostname
-	config_get payload_file "$SECTION" payload_file
 	config_get direction "$SECTION" direction "both"
 	config_get ip_family "$SECTION" ip_family "both"
 	config_get queue_num "$SECTION" queue_num "100"
@@ -214,24 +278,7 @@ validate_start_config() {
 		return 1
 	fi
 
-	case "$payload_mode" in
-		http|https)
-			[ -n "$hostname" ] || {
-				log_error "hostname is required"
-				return 1
-			}
-			;;
-		custom)
-			[ -n "$payload_file" ] || {
-				log_error "payload_file is required"
-				return 1
-			}
-			;;
-		*)
-			log_error "invalid payload_mode: $payload_mode"
-			return 1
-			;;
-	esac
+	validate_payloads || return 1
 
 	case "$direction" in
 		both|inbound|outbound) ;;
@@ -289,7 +336,7 @@ validate_start_config() {
 }
 
 start_service() {
-	local enabled interface_mode interfaces iface payload_mode hostname payload_file
+	local enabled interface_mode interfaces iface
 	local direction ip_family queue_num fwmark fwmask repeat ttl dynamic_pct
 	local disable_hop_estimation skip_firewall use_iptables silent log_file
 
@@ -308,9 +355,6 @@ start_service() {
 
 	config_get interface_mode "$SECTION" interface_mode "custom"
 	config_get interfaces "$SECTION" interfaces
-	config_get payload_mode "$SECTION" payload_mode "http"
-	config_get hostname "$SECTION" hostname
-	config_get payload_file "$SECTION" payload_file
 	config_get direction "$SECTION" direction "both"
 	config_get ip_family "$SECTION" ip_family "both"
 	config_get queue_num "$SECTION" queue_num "100"
@@ -341,11 +385,7 @@ start_service() {
 		done
 	fi
 
-	case "$payload_mode" in
-		https) append_arg "-e" "$hostname" ;;
-		custom) append_arg "-b" "$payload_file" ;;
-		*) append_arg "-h" "$hostname" ;;
-	esac
+	config_foreach append_payload_section payload
 
 	case "$direction" in
 		inbound) append_arg "-0" ;;

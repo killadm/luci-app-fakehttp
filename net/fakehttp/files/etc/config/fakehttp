@@ -4,10 +4,6 @@ config fakehttp 'main'
 	option interface_mode 'custom'
 	list interfaces 'wan'
 
-	option payload_mode 'http'
-	option hostname 'www.speedtest.cn'
-	option payload_file ''
-
 	option direction 'both'
 	option ip_family 'both'
 
@@ -28,3 +24,7 @@ config fakehttp 'main'
 	option restart_time '04:00'
 	option restart_weekday '0'
 	option restart_interval_hours '24'
+
+config payload
+	option type 'http'
+	option value 'www.speedtest.cn'
