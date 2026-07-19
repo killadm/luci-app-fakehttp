@@ -225,8 +225,8 @@ return view.extend({
 			uci.load('fakehttp'),
 			L.resolveDefault(callServiceList('fakehttp'), {}),
 			L.resolveDefault(fs.read('/etc/crontabs/root'), ''),
-			L.resolveDefault(fs.exec('/sbin/logread', [ '-e', 'fakehttp' ]), { stdout: '' }),
-			L.resolveDefault(fs.read('/var/log/fakehttp/fakehttp.log'), '')
+			L.resolveDefault(fs.exec('/usr/libexec/fakehttp-logread', [ 'system', '200' ]), { stdout: '' }),
+			L.resolveDefault(fs.exec('/usr/libexec/fakehttp-logread', [ 'file', '200' ]), { stdout: '' })
 		]);
 	},
 
@@ -236,7 +236,8 @@ return view.extend({
 		var serviceStatus = getServiceStatus(services);
 		var crontab = data[2] || '';
 		var logOutput = data[3] && data[3].stdout ? data[3].stdout : '';
-		var fileLog = data[4] || '';
+		var fileLog = data[4] && data[4].stdout ? data[4].stdout : '';
+		var fileLogPath = uci.get('fakehttp', 'main', 'log_file') || '/var/log/fakehttp/fakehttp.log';
 		var m, s, p, o, enabledOpt, ifaceModeOpt, payloadTypeOpt, noHop;
 
 		m = new form.Map('fakehttp', 'FakeHTTP');
@@ -407,6 +408,18 @@ return view.extend({
 			return true;
 		};
 
+		o = s.taboption('advanced', form.Value, 'log_max_size_kb', '日志轮转大小（KB）');
+		o.default = '512';
+		o.placeholder = '512';
+		o.rmempty = false;
+		o.validate = validateRange(64, 16384, '日志轮转大小范围为 64 到 16384 KB', false);
+
+		o = s.taboption('advanced', form.Value, 'log_rotate_count', '日志保留份数');
+		o.default = '3';
+		o.placeholder = '3';
+		o.rmempty = false;
+		o.validate = validateRange(1, 10, '日志保留份数范围为 1 到 10', false);
+
 		o = s.taboption('schedule', form.Flag, 'scheduled_restart', '启用定时重启');
 		o.rmempty = false;
 
@@ -453,7 +466,7 @@ return view.extend({
 		o.rawhtml = true;
 		o.cfgvalue = function() {
 			return renderLogBlock('系统日志', logOutput, 200) +
-				renderLogBlock('文件日志 /var/log/fakehttp/fakehttp.log', fileLog, 200);
+				renderLogBlock('文件日志 ' + fileLogPath, fileLog, 200);
 		};
 
 		return m.render();

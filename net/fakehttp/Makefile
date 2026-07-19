@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fakehttp
 PKG_VERSION:=0.9.18_git20250627
-PKG_RELEASE:=4
+PKG_RELEASE:=5
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/MikeWang000000/FakeHTTP.git
@@ -53,6 +53,7 @@ define Package/fakehttp/install
 	$(INSTALL_BIN) ./files/etc/init.d/fakehttp $(1)/etc/init.d/fakehttp
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-scheduled-restart $(1)/usr/libexec/fakehttp-scheduled-restart
+	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-logread $(1)/usr/libexec/fakehttp-logread
 endef
 
 define Package/fakehttp/postinst
@@ -101,6 +102,8 @@ define Package/fakehttp/postinst
 				uci -q set fakehttp.main.log_file='/var/log/fakehttp/fakehttp.log'
 				;;
 		esac
+		[ -n "$$(uci -q get fakehttp.main.log_max_size_kb)" ] || uci -q set fakehttp.main.log_max_size_kb='512'
+		[ -n "$$(uci -q get fakehttp.main.log_rotate_count)" ] || uci -q set fakehttp.main.log_rotate_count='3'
 
 		[ -n "$$(uci -q get fakehttp.main.scheduled_restart)" ] || uci -q set fakehttp.main.scheduled_restart='0'
 		[ -n "$$(uci -q get fakehttp.main.restart_mode)" ] || uci -q set fakehttp.main.restart_mode='daily'

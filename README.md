@@ -18,6 +18,7 @@
 - 提供 iptables 兼容模式。
 - 支持 NFQUEUE 编号、fwmark、TTL、重复包、跳数估计等高级参数。
 - 支持每天、每周、按小时间隔定时重启。
+- 支持文件日志按大小自动轮转，LuCI 只读取最近日志片段，避免大日志拖慢页面。
 - LuCI 页面提供状态查看、启动、停止、重启、更新定时任务、清理残留规则和最近日志查看。
 
 ## 目标环境
@@ -129,6 +130,8 @@ LuCI -> 服务 -> FakeHTTP
 - `interface_mode`：`custom` 指定接口，`all` 全部接口。
 - `interfaces`：指定接口列表，默认 `wan`。
 - `log_file`：FakeHTTP 文件日志，默认 `/var/log/fakehttp/fakehttp.log`。
+- `log_max_size_kb`：单个文件日志达到该大小后轮转，默认 `512` KB。
+- `log_rotate_count`：保留的轮转日志份数，默认 `3`。
 - `direction`：`both`、`inbound`、`outbound`。
 - `ip_family`：`both`、`ipv4`、`ipv6`。
 - `queue_num`：NFQUEUE 编号，默认 `100`。
@@ -174,6 +177,7 @@ FakeHTTP 会轮换使用这些 payload。重复项会原样保留，可通过重
 /etc/init.d/fakehttp stop
 /etc/init.d/fakehttp restart
 /etc/init.d/fakehttp update_cron
+/etc/init.d/fakehttp rotate_log
 /etc/init.d/fakehttp cleanup_rules
 ```
 
