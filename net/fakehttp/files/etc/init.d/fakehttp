@@ -427,26 +427,25 @@ validate_payload_section() {
 		http|https)
 			[ -n "$value" ] || {
 				log_error "payload value is required in $section"
-				PAYLOAD_INVALID=1
+				return 1
 			}
 			;;
 		custom)
 			[ -n "$value" ] || {
 				log_error "payload file is required in $section"
-				PAYLOAD_INVALID=1
-				return 0
+				return 1
 			}
 			case "$value" in
 				/*) ;;
 				*)
 					log_error "payload file must be an absolute path in $section"
-					PAYLOAD_INVALID=1
+					return 1
 					;;
 			esac
 			;;
 		*)
 			log_error "invalid payload type in $section: $type"
-			PAYLOAD_INVALID=1
+			return 1
 			;;
 	esac
 
@@ -454,17 +453,20 @@ validate_payload_section() {
 }
 
 validate_payloads() {
-	PAYLOAD_COUNT=0
-	PAYLOAD_INVALID=0
+	local sections section count=0 invalid=0
 
-	config_foreach validate_payload_section payload
+	sections="$(uci -q show "$CONFIG" | sed -n "s/^$CONFIG\\.\\([^=]*\\)=payload$/\\1/p")"
+	for section in $sections; do
+		count=$((count + 1))
+		validate_payload_section "$section" || invalid=1
+	done
 
-	if [ "$PAYLOAD_COUNT" -eq 0 ]; then
+	if [ "$count" -eq 0 ]; then
 		log_error "at least one payload is required"
 		return 1
 	fi
 
-	[ "$PAYLOAD_INVALID" -eq 0 ]
+	[ "$invalid" -eq 0 ]
 }
 
 append_payload_section() {
