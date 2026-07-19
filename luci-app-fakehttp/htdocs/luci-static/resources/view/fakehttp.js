@@ -85,8 +85,7 @@ function getScheduleText(crontab) {
 	return text + (active ? '（已写入 cron）' : '（等待保存并应用）');
 }
 
-function renderRuntimeStatus(services, crontab) {
-	var status = getServiceStatus(services);
+function renderRuntimeStatus(status) {
 	var queue = uci.get('fakehttp', 'main', 'queue_num') || '100';
 	var ifaceMode = uci.get('fakehttp', 'main', 'interface_mode') || 'custom';
 	var ifaces = uci.get('fakehttp', 'main', 'interfaces') || [];
@@ -101,7 +100,6 @@ function renderRuntimeStatus(services, crontab) {
 			'<span style="margin-left:1em">' + escapeHTML(pidText) + '</span>' +
 			'<span style="margin-left:1em">队列：' + escapeHTML(queue) + '</span>' +
 			'<span style="margin-left:1em">接口：' + escapeHTML(ifaceText || '-') + '</span>' +
-			'<div style="margin-top:.5em">定时重启：' + escapeHTML(getScheduleText(crontab)) + '</div>' +
 		'</div>';
 }
 
@@ -179,21 +177,38 @@ function runInitAction(action, successText) {
 	});
 }
 
-function renderActionGroup(actions) {
-	return E('div', {
+function renderActionGroup(actions, footer) {
+	var buttons = E('div', {
 		'style': 'display:flex;gap:.5em;flex-wrap:wrap;align-items:center'
 	}, actions.map(function(action) {
-		return E('button', {
+		var props = {
 			'class': 'cbi-button cbi-button-' + action.style,
 			'type': 'button',
 			'title': action.title,
 			'click': function(ev) {
 				ev.preventDefault();
 				ev.stopPropagation();
+				if (action.disabled)
+					return false;
 				return runInitAction(action.action, action.success);
 			}
-		}, [ action.label || action.title ]);
+		};
+
+		if (action.disabled)
+			props.disabled = 'disabled';
+
+		return E('button', props, [ action.label || action.title ]);
 	}));
+
+	if (!footer)
+		return buttons;
+
+	return E('div', {}, [
+		buttons,
+		E('div', {
+			'style': 'margin-top:.5em'
+		}, [ footer ])
+	]);
 }
 
 return view.extend({
@@ -209,6 +224,7 @@ return view.extend({
 
 	render: function(data) {
 		var services = data[1];
+		var serviceStatus = getServiceStatus(services);
 		var crontab = data[2] || '';
 		var logOutput = data[3] && data[3].stdout ? data[3].stdout : '';
 		var fileLog = data[4] || '';
@@ -226,18 +242,21 @@ return view.extend({
 		s.tab('schedule', '定时重启');
 		s.tab('logs', '日志');
 
+		enabledOpt = s.taboption('status', form.Flag, 'enabled', '启用');
+		enabledOpt.rmempty = false;
+
 		o = s.taboption('status', form.DummyValue, '_runtime', '当前状态');
 		o.rawhtml = true;
 		o.cfgvalue = function() {
-			return renderRuntimeStatus(services, crontab);
+			return renderRuntimeStatus(serviceStatus);
 		};
 
 		o = s.taboption('status', form.DummyValue, '_service_actions', '服务控制');
 		o.renderWidget = function() {
 			return renderActionGroup([
-				{ title: '启动服务', style: 'apply', action: 'start_now', success: 'FakeHTTP 已启动', label: '启动' },
-				{ title: '停止服务', style: 'reset', action: 'stop_now', success: 'FakeHTTP 已停止', label: '停止' },
-				{ title: '重启服务', style: 'reload', action: 'restart_now', success: 'FakeHTTP 已重启', label: '重启' }
+				{ title: '启动服务', style: 'apply', action: 'start_now', success: 'FakeHTTP 已启动', label: '启动', disabled: serviceStatus.running },
+				{ title: '停止服务', style: 'reset', action: 'stop_now', success: 'FakeHTTP 已停止', label: '停止', disabled: !serviceStatus.running },
+				{ title: '重启服务', style: 'reload', action: 'restart_now', success: 'FakeHTTP 已重启', label: '重启', disabled: !serviceStatus.running }
 			]);
 		};
 
@@ -246,11 +265,8 @@ return view.extend({
 			return renderActionGroup([
 				{ title: '更新定时任务', style: 'apply', action: 'update_cron', success: '定时任务已更新', label: '更新' },
 				{ title: '清理残留规则', style: 'remove', action: 'cleanup_rules', success: '残留规则清理完成', label: '清理' }
-			]);
+			], '定时重启：' + getScheduleText(crontab));
 		};
-
-		enabledOpt = s.taboption('basic', form.Flag, 'enabled', '启用');
-		enabledOpt.rmempty = false;
 
 		ifaceModeOpt = s.taboption('basic', form.ListValue, 'interface_mode', '接口范围');
 		ifaceModeOpt.value('custom', '指定接口');
