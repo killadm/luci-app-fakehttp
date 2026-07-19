@@ -224,6 +224,57 @@ function validateMark(sectionId, value) {
 	return true;
 }
 
+function isValidIPv4(value) {
+	var parts = String(value || '').split('.');
+
+	if (parts.length !== 4)
+		return false;
+
+	for (var i = 0; i < parts.length; i++) {
+		if (!/^(0|[1-9][0-9]{0,2})$/.test(parts[i]))
+			return false;
+		if (Number(parts[i]) > 255)
+			return false;
+	}
+
+	return true;
+}
+
+function isValidIPv6(value) {
+	if (String(value || '').indexOf(':') < 0)
+		return false;
+
+	try {
+		return new URL('http://[' + value + ']/').hostname.length > 0;
+	} catch (e) {
+		return false;
+	}
+}
+
+function isValidHostname(value) {
+	var labels, host = String(value || '');
+
+	if (host.length > 253)
+		return false;
+
+	if (isValidIPv4(host) || isValidIPv6(host))
+		return true;
+
+	if (/^[0-9]+(\.[0-9]+){3}$/.test(host))
+		return false;
+
+	if (host.charAt(host.length - 1) === '.')
+		host = host.slice(0, -1);
+
+	labels = host.split('.');
+	for (var i = 0; i < labels.length; i++) {
+		if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/.test(labels[i]))
+			return false;
+	}
+
+	return labels.length > 0;
+}
+
 function validateLogPath(sectionId, value) {
 	if (!value)
 		return true;
@@ -408,8 +459,8 @@ return view.extend({
 				return true;
 			}
 
-			if (!/^([A-Za-z0-9][A-Za-z0-9-]*\.)*[A-Za-z0-9][A-Za-z0-9-]*\.?$/.test(value))
-				return '请输入有效主机名，例如 www.example.com';
+			if (!isValidHostname(value))
+				return '请输入有效主机名或 IP，例如 localhost、www.example.com、192.0.2.1';
 
 			return true;
 		};
