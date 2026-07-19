@@ -118,12 +118,64 @@ function tailText(text, count) {
 	return lines.join('\n') || '暂无 FakeHTTP 日志';
 }
 
-function renderLogBlock(title, text, count) {
+function renderLogPanel(text, count) {
+	return E('pre', {
+		'style': 'width:100%;box-sizing:border-box;max-height:32em;overflow:auto;white-space:pre-wrap'
+	}, [ tailText(text, count) ]);
+}
+
+function renderLogTabs(systemLog, fileLog) {
+	var baseButtonStyle = '-webkit-appearance:none;appearance:none;background:transparent;border:0;border-bottom:2px solid transparent;color:inherit;cursor:pointer;margin:0;padding:.35em .1em .45em';
+	var activeButtonStyle = baseButtonStyle + ';font-weight:600;border-bottom-color:currentColor';
+	var inactiveButtonStyle = baseButtonStyle + ';font-weight:400';
+	var systemPanel = E('div', { 'style': 'display:none;width:100%;box-sizing:border-box' }, [
+		renderLogPanel(systemLog, 200)
+	]);
+	var filePanel = E('div', { 'style': 'display:block;width:100%;box-sizing:border-box' }, [
+		renderLogPanel(fileLog, 200)
+	]);
+	var systemButton, fileButton;
+
+	function setActive(type) {
+		var showFile = type === 'file';
+
+		filePanel.style.display = showFile ? 'block' : 'none';
+		systemPanel.style.display = showFile ? 'none' : 'block';
+		fileButton.style.cssText = showFile ? activeButtonStyle : inactiveButtonStyle;
+		systemButton.style.cssText = showFile ? inactiveButtonStyle : activeButtonStyle;
+		fileButton.setAttribute('aria-selected', showFile ? 'true' : 'false');
+		systemButton.setAttribute('aria-selected', showFile ? 'false' : 'true');
+	}
+
+	fileButton = E('button', {
+		'type': 'button',
+		'role': 'tab',
+		'aria-selected': 'true',
+		'style': activeButtonStyle,
+		'click': function(ev) {
+			ev.preventDefault();
+			setActive('file');
+		}
+	}, [ '文件日志' ]);
+
+	systemButton = E('button', {
+		'type': 'button',
+		'role': 'tab',
+		'aria-selected': 'false',
+		'style': inactiveButtonStyle,
+		'click': function(ev) {
+			ev.preventDefault();
+			setActive('system');
+		}
+	}, [ '系统日志' ]);
+
 	return E('div', { 'style': 'width:100%;box-sizing:border-box' }, [
-		E('h3', {}, title),
-		E('pre', {
-			'style': 'width:100%;box-sizing:border-box;max-height:32em;overflow:auto;white-space:pre-wrap'
-		}, [ tailText(text, count) ])
+		E('div', {
+			'role': 'tablist',
+			'style': 'display:flex;gap:1em;margin-bottom:.75em;border-bottom:1px solid var(--border-color,#ddd)'
+		}, [ fileButton, systemButton ]),
+		filePanel,
+		systemPanel
 	]);
 }
 
@@ -239,7 +291,6 @@ return view.extend({
 		var crontab = data[2] || '';
 		var logOutput = data[3] && data[3].stdout ? data[3].stdout : '';
 		var fileLog = data[4] && data[4].stdout ? data[4].stdout : '';
-		var fileLogPath = uci.get('fakehttp', 'main', 'log_file') || '/var/log/fakehttp/fakehttp.log';
 		var m, s, p, o, enabledOpt, ifaceModeOpt, payloadTypeOpt, noHop;
 
 		m = new form.Map('fakehttp', 'FakeHTTP');
@@ -471,8 +522,7 @@ return view.extend({
 					'class': 'cbi-value-field',
 					'style': 'display:block;width:100%;margin-left:0'
 				}, [
-					renderLogBlock('系统日志', logOutput, 200),
-					renderLogBlock('文件日志 ' + fileLogPath, fileLog, 200)
+					renderLogTabs(logOutput, fileLog)
 				])
 			]);
 		};
