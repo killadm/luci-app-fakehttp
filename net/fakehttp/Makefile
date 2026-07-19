@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fakehttp
 PKG_VERSION:=0.9.18_git20250627
-PKG_RELEASE:=7
+PKG_RELEASE:=8
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/MikeWang000000/FakeHTTP.git
@@ -118,7 +118,10 @@ define Package/fakehttp/postinst
 		[ -n "$$(uci -q get fakehttp.main.restart_interval_hours)" ] || uci -q set fakehttp.main.restart_interval_hours='24'
 
 		uci -q commit fakehttp || return 1
-		[ "$$adopted_opkg" -eq 1 ] && rm -f /etc/config/fakehttp-opkg
+		if [ "$$adopted_opkg" -eq 1 ]; then
+			rm -f /etc/config/fakehttp-opkg
+		fi
+		return 0
 	}
 
 	migrate_fakehttp_config || logger -t fakehttp "ERROR: config migration failed; leaving /etc/config/fakehttp-opkg untouched"
