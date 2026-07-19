@@ -33,16 +33,10 @@ EXTRA_HELP="	start_now	Start FakeHTTP once without changing UCI enabled
 
 . /lib/functions.sh
 . /lib/functions/network.sh
+. /usr/share/fakehttp/functions.sh
 
 log_error() {
 	logger -t "$NAME" "ERROR: $*"
-}
-
-is_uint() {
-	case "$1" in
-		''|*[!0-9]*) return 1 ;;
-	esac
-	return 0
 }
 
 is_time() {

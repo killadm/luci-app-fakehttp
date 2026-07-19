@@ -1,19 +1,13 @@
 #!/bin/sh
 
 . /lib/functions.sh
+. /usr/share/fakehttp/functions.sh
 
 NAME="fakehttp"
 CONFIG="fakehttp"
 SECTION="main"
 RUN_DIR="/var/run/fakehttp"
 STAMP_FILE="$RUN_DIR/restart.stamp"
-
-is_uint() {
-	case "$1" in
-		''|*[!0-9]*) return 1 ;;
-	esac
-	return 0
-}
 
 load_settings() {
 	config_load "$CONFIG"
