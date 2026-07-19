@@ -85,7 +85,15 @@ function getScheduleText(crontab) {
 	return text + (active ? '（已写入 cron）' : '（等待保存并应用）');
 }
 
-function renderRuntimeStatus(status) {
+function renderRuntimeStatus(enabled, status) {
+	if (!enabled) {
+		return '' +
+			'<div class="cbi-value-field">' +
+				'<span class="label warning">未启用</span>' +
+				'<span style="margin-left:1em">启用后可使用操作按钮</span>' +
+			'</div>';
+	}
+
 	var queue = uci.get('fakehttp', 'main', 'queue_num') || '100';
 	var ifaceMode = uci.get('fakehttp', 'main', 'interface_mode') || 'custom';
 	var ifaces = uci.get('fakehttp', 'main', 'interfaces') || [];
@@ -224,6 +232,7 @@ return view.extend({
 
 	render: function(data) {
 		var services = data[1];
+		var serviceEnabled = uci.get('fakehttp', 'main', 'enabled') === '1';
 		var serviceStatus = getServiceStatus(services);
 		var crontab = data[2] || '';
 		var logOutput = data[3] && data[3].stdout ? data[3].stdout : '';
@@ -248,23 +257,23 @@ return view.extend({
 		o = s.taboption('status', form.DummyValue, '_runtime', '当前状态');
 		o.rawhtml = true;
 		o.cfgvalue = function() {
-			return renderRuntimeStatus(serviceStatus);
+			return renderRuntimeStatus(serviceEnabled, serviceStatus);
 		};
 
 		o = s.taboption('status', form.DummyValue, '_service_actions', '服务控制');
 		o.renderWidget = function() {
 			return renderActionGroup([
-				{ title: '启动服务', style: 'apply', action: 'start_now', success: 'FakeHTTP 已启动', label: '启动', disabled: serviceStatus.running },
-				{ title: '停止服务', style: 'reset', action: 'stop_now', success: 'FakeHTTP 已停止', label: '停止', disabled: !serviceStatus.running },
-				{ title: '重启服务', style: 'reload', action: 'restart_now', success: 'FakeHTTP 已重启', label: '重启', disabled: !serviceStatus.running }
+				{ title: '启动服务', style: 'apply', action: 'start_now', success: 'FakeHTTP 已启动', label: '启动', disabled: !serviceEnabled || serviceStatus.running },
+				{ title: '停止服务', style: 'reset', action: 'stop_now', success: 'FakeHTTP 已停止', label: '停止', disabled: !serviceEnabled || !serviceStatus.running },
+				{ title: '重启服务', style: 'reload', action: 'restart_now', success: 'FakeHTTP 已重启', label: '重启', disabled: !serviceEnabled || !serviceStatus.running }
 			]);
 		};
 
 		o = s.taboption('status', form.DummyValue, '_maintenance_actions', '定时任务');
 		o.renderWidget = function() {
 			return renderActionGroup([
-				{ title: '更新定时任务', style: 'apply', action: 'update_cron', success: '定时任务已更新', label: '更新' },
-				{ title: '清理残留规则', style: 'remove', action: 'cleanup_rules', success: '残留规则清理完成', label: '清理' }
+				{ title: '更新定时任务', style: 'apply', action: 'update_cron', success: '定时任务已更新', label: '更新', disabled: !serviceEnabled },
+				{ title: '清理残留规则', style: 'remove', action: 'cleanup_rules', success: '残留规则清理完成', label: '清理', disabled: !serviceEnabled }
 			], '定时重启：' + getScheduleText(crontab));
 		};
 
