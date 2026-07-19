@@ -62,10 +62,14 @@ define Package/fakehttp/postinst
 #!/bin/sh
 [ -n "$$IPKG_INSTROOT" ] || {
 	migrate_fakehttp_config() {
-		local payload_section log_file
+		local payload_section log_file adopted_opkg
 
+		adopted_opkg=0
 		[ -f /etc/config/fakehttp ] || {
-			[ -f /etc/config/fakehttp-opkg ] && mv /etc/config/fakehttp-opkg /etc/config/fakehttp
+			[ -f /etc/config/fakehttp-opkg ] && {
+				mv /etc/config/fakehttp-opkg /etc/config/fakehttp || return 1
+				adopted_opkg=1
+			}
 		}
 
 		uci -q get fakehttp.main >/dev/null || uci -q set fakehttp.main=fakehttp
@@ -113,11 +117,11 @@ define Package/fakehttp/postinst
 		[ -n "$$(uci -q get fakehttp.main.restart_weekday)" ] || uci -q set fakehttp.main.restart_weekday='0'
 		[ -n "$$(uci -q get fakehttp.main.restart_interval_hours)" ] || uci -q set fakehttp.main.restart_interval_hours='24'
 
-		uci -q commit fakehttp
-		rm -f /etc/config/fakehttp-opkg
+		uci -q commit fakehttp || return 1
+		[ "$$adopted_opkg" -eq 1 ] && rm -f /etc/config/fakehttp-opkg
 	}
 
-	migrate_fakehttp_config
+	migrate_fakehttp_config || logger -t fakehttp "ERROR: config migration failed; leaving /etc/config/fakehttp-opkg untouched"
 	/etc/init.d/fakehttp enable >/dev/null 2>&1 || true
 	/etc/init.d/fakehttp update_cron >/dev/null 2>&1 || true
 }
