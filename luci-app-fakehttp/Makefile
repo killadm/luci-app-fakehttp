@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-fakehttp
-PKG_RELEASE:=9
+PKG_RELEASE:=10
 
 PKG_MAINTAINER:=FakeHTTP LuCI feed
 PKG_LICENSE:=GPL-3.0-or-later

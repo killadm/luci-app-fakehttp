@@ -125,55 +125,59 @@ function renderLogPanel(text, count) {
 }
 
 function renderLogTabs(systemLog, fileLog) {
-	var baseButtonStyle = '-webkit-appearance:none;appearance:none;background:transparent;border:0;border-bottom:2px solid transparent;color:inherit;cursor:pointer;margin:0;padding:.35em .1em .45em';
-	var activeButtonStyle = baseButtonStyle + ';font-weight:600;border-bottom-color:currentColor';
-	var inactiveButtonStyle = baseButtonStyle + ';font-weight:400';
 	var systemPanel = E('div', { 'style': 'display:none;width:100%;box-sizing:border-box' }, [
 		renderLogPanel(systemLog, 200)
 	]);
 	var filePanel = E('div', { 'style': 'display:block;width:100%;box-sizing:border-box' }, [
 		renderLogPanel(fileLog, 200)
 	]);
-	var systemButton, fileButton;
+	var systemTab, fileTab;
 
 	function setActive(type) {
 		var showFile = type === 'file';
 
 		filePanel.style.display = showFile ? 'block' : 'none';
 		systemPanel.style.display = showFile ? 'none' : 'block';
-		fileButton.style.cssText = showFile ? activeButtonStyle : inactiveButtonStyle;
-		systemButton.style.cssText = showFile ? inactiveButtonStyle : activeButtonStyle;
-		fileButton.setAttribute('aria-selected', showFile ? 'true' : 'false');
-		systemButton.setAttribute('aria-selected', showFile ? 'false' : 'true');
+		fileTab.className = showFile ? 'cbi-tab' : 'cbi-tab-disabled';
+		systemTab.className = showFile ? 'cbi-tab-disabled' : 'cbi-tab';
+		fileTab.setAttribute('aria-selected', showFile ? 'true' : 'false');
+		systemTab.setAttribute('aria-selected', showFile ? 'false' : 'true');
 	}
 
-	fileButton = E('button', {
-		'type': 'button',
+	fileTab = E('li', {
+		'class': 'cbi-tab',
 		'role': 'tab',
-		'aria-selected': 'true',
-		'style': activeButtonStyle,
-		'click': function(ev) {
-			ev.preventDefault();
-			setActive('file');
-		}
-	}, [ '文件日志' ]);
+		'aria-selected': 'true'
+	}, [
+		E('a', {
+			'href': '#',
+			'click': function(ev) {
+				ev.preventDefault();
+				setActive('file');
+			}
+		}, [ '文件日志' ])
+	]);
 
-	systemButton = E('button', {
-		'type': 'button',
+	systemTab = E('li', {
+		'class': 'cbi-tab-disabled',
 		'role': 'tab',
-		'aria-selected': 'false',
-		'style': inactiveButtonStyle,
-		'click': function(ev) {
-			ev.preventDefault();
-			setActive('system');
-		}
-	}, [ '系统日志' ]);
+		'aria-selected': 'false'
+	}, [
+		E('a', {
+			'href': '#',
+			'click': function(ev) {
+				ev.preventDefault();
+				setActive('system');
+			}
+		}, [ '系统日志' ])
+	]);
 
 	return E('div', { 'style': 'width:100%;box-sizing:border-box' }, [
-		E('div', {
+		E('ul', {
+			'class': 'cbi-tabmenu',
 			'role': 'tablist',
-			'style': 'display:flex;gap:1em;margin-bottom:.75em;border-bottom:1px solid var(--border-color,#ddd)'
-		}, [ fileButton, systemButton ]),
+			'style': 'margin-bottom:.75em'
+		}, [ fileTab, systemTab ]),
 		filePanel,
 		systemPanel
 	]);
@@ -446,9 +450,6 @@ return view.extend({
 		o = s.taboption('advanced', form.Flag, 'use_iptables', '使用 iptables 兼容模式');
 		o.rmempty = false;
 
-		o = s.taboption('advanced', form.Flag, 'silent', '静默模式');
-		o.rmempty = false;
-
 		o = s.taboption('advanced', form.Value, 'log_file', '日志文件');
 		o.default = '/var/log/fakehttp/fakehttp.log';
 		o.placeholder = '/var/log/fakehttp/fakehttp.log';
@@ -514,6 +515,10 @@ return view.extend({
 		o.cfgvalue = function() {
 			return '<div class="cbi-value-field">' + escapeHTML(getScheduleText(crontab)) + '</div>';
 		};
+
+		o = s.taboption('logs', form.Flag, 'silent', '静默模式');
+		o.rmempty = false;
+		o.description = '启用后仅保留错误等关键输出，减少连接处理明细日志；排查问题时建议关闭。';
 
 		o = s.taboption('logs', form.DummyValue, '_logs');
 		o.render = function() {
