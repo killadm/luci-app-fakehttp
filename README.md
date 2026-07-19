@@ -129,7 +129,7 @@ LuCI -> 服务 -> FakeHTTP
 - `enabled`：是否启用服务。
 - `interface_mode`：`custom` 指定接口，`all` 全部接口。
 - `interfaces`：指定接口列表，默认 `wan`。
-- `log_file`：FakeHTTP 文件日志，默认 `/var/log/fakehttp/fakehttp.log`。
+- `log_file`：FakeHTTP 文件日志，必须位于 `/var/log/fakehttp/`，默认 `/var/log/fakehttp/fakehttp.log`。
 - `log_max_size_kb`：单个文件日志达到该大小后轮转，默认 `512` KB。
 - `log_rotate_count`：保留的轮转日志份数，默认 `3`。
 - `direction`：`both`、`inbound`、`outbound`。
@@ -203,7 +203,7 @@ FakeHTTP 会轮换使用这些 payload。重复项会原样保留，可通过重
 - 默认使用 nftables；只有在兼容需求明确时才建议开启 iptables 模式。
 - 如果修改了 NFQUEUE 编号、fwmark 或防火墙相关设置，建议重启服务后检查规则是否生效。
 - `cleanup_rules` 只清理 FakeHTTP 自己创建的 nftables/iptables 规则。
-- 升级安装时如果看到 `resolve_conffiles` 提示，表示 opkg 发现本机已有 `/etc/config/fakehttp`，因此保护用户配置。安装脚本会保留现有配置、补齐缺失默认项，并清理 `/etc/config/fakehttp-opkg`。
+- 升级安装时如果看到 `resolve_conffiles` 提示，表示 opkg 发现本机已有 `/etc/config/fakehttp`，因此保护用户配置。安装脚本会保留现有配置并补齐缺失默认项；如果 `/etc/config/fakehttp-opkg` 未被接管为主配置，会保留该文件供手动对比。
 
 ## 许可证
 
