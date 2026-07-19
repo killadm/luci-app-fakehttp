@@ -446,12 +446,14 @@ return view.extend({
 
 		o = p.option(form.Value, 'value', '值');
 		o.placeholder = 'www.speedtest.cn';
-		o.rmempty = false;
+		o.rmempty = true;
 		o.validate = function(sectionId, value) {
 			var type = payloadTypeOpt.formvalue(sectionId) || 'http';
 
-			if (!value)
+			if (!value && enabledOpt.formvalue('main') === '1')
 				return '请填写负载值';
+			if (!value)
+				return true;
 
 			if (type === 'custom') {
 				if (value.charAt(0) !== '/')
