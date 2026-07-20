@@ -280,8 +280,8 @@ function validateLogPath(sectionId, value) {
 	if (!value)
 		return true;
 
-	if (!/^\/var\/log\/fakehttp\/[A-Za-z0-9._-]+$/.test(value) || value.indexOf('..') >= 0)
-		return '日志文件必须位于 /var/log/fakehttp/，文件名只能包含字母、数字、点、下划线和短横线';
+	if (!/^\/(?:var\/log|mnt|opt)\/.+/.test(value) || /(^|\/)\.\.(\/|$)/.test(value) || /\/$/.test(value))
+		return '日志文件必须是 /var/log、/mnt 或 /opt 下的绝对文件路径，且不能包含上级目录引用';
 
 	return true;
 }

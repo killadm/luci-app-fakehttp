@@ -129,7 +129,7 @@ LuCI -> 服务 -> FakeHTTP
 - `enabled`：是否启用服务。
 - `interface_mode`：`custom` 指定接口，`all` 全部接口。
 - `interfaces`：指定接口列表，默认 `wan`。
-- `log_file`：FakeHTTP 文件日志，必须位于 `/var/log/fakehttp/`，默认 `/var/log/fakehttp/fakehttp.log`。
+- `log_file`：FakeHTTP 文件日志，必须是 `/var/log`、`/mnt` 或 `/opt` 下的绝对文件路径，不能包含 `..` 或指向符号链接，默认 `/var/log/fakehttp/fakehttp.log`。
 - `log_max_size_kb`：单个文件日志达到该大小后轮转，默认 `512` KB。
 - `log_rotate_count`：保留的轮转日志份数，默认 `3`。
 - `direction`：`both`、`inbound`、`outbound`。
