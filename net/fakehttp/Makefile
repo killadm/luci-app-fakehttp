@@ -52,6 +52,7 @@ define Package/fakehttp/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/etc/init.d/fakehttp $(1)/etc/init.d/fakehttp
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
+	$(INSTALL_BIN) ./files/etc/uci-defaults/80-fakehttp-defaults $(1)/etc/uci-defaults/80-fakehttp-defaults
 	$(INSTALL_BIN) ./files/etc/uci-defaults/90-fakehttp-migrate $(1)/etc/uci-defaults/90-fakehttp-migrate
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-scheduled-restart $(1)/usr/libexec/fakehttp-scheduled-restart
