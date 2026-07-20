@@ -79,4 +79,10 @@ define Package/fakehttp/prerm
 exit 0
 endef
 
+define Package/fakehttp/postrm
+#!/bin/sh
+rm -rf /var/log/fakehttp /var/run/fakehttp 2>/dev/null || true
+exit 0
+endef
+
 $(eval $(call BuildPackage,fakehttp))
