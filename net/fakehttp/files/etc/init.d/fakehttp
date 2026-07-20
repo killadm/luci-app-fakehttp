@@ -474,23 +474,23 @@ append_payload_section() {
 }
 
 validate_start_config() {
-	local interface_mode="$1"
-	local interfaces="$2"
-	local direction="$3"
-	local ip_family="$4"
-	local queue_num="$5"
-	local fwmark="$6"
-	local fwmask="$7"
-	local repeat="$8"
-	local ttl="$9"
+	local interface_mode interfaces direction ip_family queue_num fwmark fwmask repeat ttl
 	local dynamic_pct disable_hop_estimation log_file log_max_size_kb log_rotate_count
 
-	shift 9
-	dynamic_pct="$1"
-	disable_hop_estimation="$2"
-	log_file="$3"
-	log_max_size_kb="$4"
-	log_rotate_count="$5"
+	config_get interface_mode "$SECTION" interface_mode "custom"
+	config_get interfaces "$SECTION" interfaces
+	config_get direction "$SECTION" direction "both"
+	config_get ip_family "$SECTION" ip_family "both"
+	config_get queue_num "$SECTION" queue_num "100"
+	config_get fwmark "$SECTION" fwmark "0x8000"
+	config_get fwmask "$SECTION" fwmask
+	config_get repeat "$SECTION" repeat "2"
+	config_get ttl "$SECTION" ttl "3"
+	config_get dynamic_pct "$SECTION" dynamic_pct
+	config_get_bool disable_hop_estimation "$SECTION" disable_hop_estimation 0
+	config_get log_file "$SECTION" log_file "$DEFAULT_LOG_FILE"
+	config_get log_max_size_kb "$SECTION" log_max_size_kb "$DEFAULT_LOG_MAX_SIZE_KB"
+	config_get log_rotate_count "$SECTION" log_rotate_count "$DEFAULT_LOG_ROTATE_COUNT"
 
 	if [ "$interface_mode" != "all" ] && [ -z "$interfaces" ]; then
 		log_error "at least one interface is required"
@@ -593,10 +593,7 @@ start_service() {
 	config_get log_max_size_kb "$SECTION" log_max_size_kb "$DEFAULT_LOG_MAX_SIZE_KB"
 	config_get log_rotate_count "$SECTION" log_rotate_count "$DEFAULT_LOG_ROTATE_COUNT"
 
-	validate_start_config \
-		"$interface_mode" "$interfaces" "$direction" "$ip_family" "$queue_num" \
-		"$fwmark" "$fwmask" "$repeat" "$ttl" "$dynamic_pct" \
-		"$disable_hop_estimation" "$log_file" "$log_max_size_kb" "$log_rotate_count" || return 1
+	validate_start_config || return 1
 
 	update_cron log_validated || return 1
 
