@@ -6,6 +6,7 @@
 'require uci';
 'require ui';
 'require tools.widgets as widgets';
+'require css!view/fakehttp.css';
 
 var callServiceList = rpc.declare({
 	object: 'service',
@@ -91,7 +92,7 @@ function renderRuntimeStatus(enabled, status) {
 		return '' +
 			'<div class="cbi-value-field">' +
 				'<span class="label warning">未启用</span>' +
-				'<span style="margin-left:1em">服务当前未运行</span>' +
+				'<span class="fakehttp-status-meta">服务当前未运行</span>' +
 			'</div>';
 	}
 
@@ -106,9 +107,9 @@ function renderRuntimeStatus(enabled, status) {
 	return '' +
 		'<div class="cbi-value-field">' +
 			'<span class="' + labelClass + '">' + label + '</span>' +
-			'<span style="margin-left:1em">' + escapeHTML(pidText) + '</span>' +
-			'<span style="margin-left:1em">队列：' + escapeHTML(queue) + '</span>' +
-			'<span style="margin-left:1em">接口：' + escapeHTML(ifaceText || '-') + '</span>' +
+			'<span class="fakehttp-status-meta">' + escapeHTML(pidText) + '</span>' +
+			'<span class="fakehttp-status-meta">队列：' + escapeHTML(queue) + '</span>' +
+			'<span class="fakehttp-status-meta">接口：' + escapeHTML(ifaceText || '-') + '</span>' +
 		'</div>';
 }
 
@@ -121,12 +122,12 @@ function tailText(text, count) {
 
 function renderLogPanel(text, count) {
 	return E('pre', {
-		'style': 'width:100%;box-sizing:border-box;max-height:32em;overflow:auto;white-space:pre-wrap'
+		'class': 'fakehttp-log-panel'
 	}, [ tailText(text, count) ]);
 }
 
 function renderLogTabs(systemLog, fileLog) {
-	var tabs = E('div', {}, [
+	var tabs = E('div', { 'class': 'fakehttp-log-tabs' }, [
 		E('div', {
 			'data-tab': 'file',
 			'data-tab-title': '文件日志',
@@ -251,7 +252,7 @@ function validateLogPath(sectionId, value) {
 function runInitAction(action, successText) {
 	return fs.exec('/etc/init.d/fakehttp', [ action ]).then(function(res) {
 		if (res.code !== 0) {
-			ui.addNotification('操作失败', E('pre', { 'style': 'white-space:pre-wrap' },
+			ui.addNotification('操作失败', E('pre', { 'class': 'fakehttp-notification-log' },
 				(res.stderr || res.stdout || '命令执行失败').trim()), 'danger');
 			return;
 		}
@@ -265,14 +266,14 @@ function runInitAction(action, successText) {
 			}, 900);
 		});
 	}).catch(function(err) {
-		ui.addNotification('操作失败', E('pre', { 'style': 'white-space:pre-wrap' },
+		ui.addNotification('操作失败', E('pre', { 'class': 'fakehttp-notification-log' },
 			String(err && (err.message || err) || 'RPC 调用失败')), 'danger');
 	});
 }
 
 function renderActionGroup(actions, footer) {
 	var buttons = E('div', {
-		'style': 'display:flex;gap:.5em;flex-wrap:wrap;align-items:center'
+		'class': 'fakehttp-action-group'
 	}, actions.map(function(action) {
 		var props = {
 			'class': 'cbi-button cbi-button-' + action.style,
@@ -312,7 +313,7 @@ function renderActionGroup(actions, footer) {
 	return E('div', {}, [
 		buttons,
 		E('div', {
-			'style': 'margin-top:.5em'
+			'class': 'fakehttp-action-footer'
 		}, [ footer ])
 	]);
 }
@@ -558,10 +559,9 @@ return view.extend({
 
 		o = s.taboption('logs', form.DummyValue, '_logs');
 		o.render = function() {
-			return E('div', { 'class': 'cbi-value', 'style': 'display:block' }, [
+			return E('div', { 'class': 'cbi-value fakehttp-log-value' }, [
 				E('div', {
-					'class': 'cbi-value-field',
-					'style': 'display:block;width:100%;margin-left:0'
+					'class': 'cbi-value-field fakehttp-log-field'
 				}, [
 					renderLogTabs(logOutput, fileLog)
 				])

@@ -1,0 +1,40 @@
+.fakehttp-status-meta {
+	margin-left: 1em;
+}
+
+.fakehttp-log-panel {
+	width: 100%;
+	box-sizing: border-box;
+	max-height: 32em;
+	overflow: auto;
+	white-space: pre-wrap;
+}
+
+.fakehttp-log-tabs > .cbi-tabmenu {
+	margin-bottom: .75em;
+}
+
+.fakehttp-notification-log {
+	white-space: pre-wrap;
+}
+
+.fakehttp-action-group {
+	display: flex;
+	gap: .5em;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.fakehttp-action-footer {
+	margin-top: .5em;
+}
+
+.fakehttp-log-value,
+.fakehttp-log-field {
+	display: block;
+}
+
+.fakehttp-log-field {
+	width: 100%;
+	margin-left: 0;
+}
