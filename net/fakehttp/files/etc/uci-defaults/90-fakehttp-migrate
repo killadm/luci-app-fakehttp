@@ -66,7 +66,7 @@ migrate_fakehttp_config() {
 }
 
 migrate_fakehttp_config || {
-	logger -t "$NAME" "ERROR: config migration failed; leaving /etc/config/fakehttp-opkg untouched"
+	logger -t "$NAME" -p daemon.err "ERROR: config migration failed; leaving /etc/config/fakehttp-opkg untouched"
 	exit 1
 }
 
