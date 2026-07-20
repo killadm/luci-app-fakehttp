@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fakehttp
-PKG_VERSION:=0.9.18_git20250627
+PKG_VERSION:=0.9.18+git20250627
 PKG_RELEASE:=8
 
 PKG_SOURCE_PROTO:=git
