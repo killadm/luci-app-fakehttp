@@ -6,7 +6,6 @@
 'require uci';
 'require ui';
 'require tools.widgets as widgets';
-'require css!view/fakehttp.css';
 
 var callServiceList = rpc.declare({
 	object: 'service',
@@ -17,6 +16,24 @@ var callServiceList = rpc.declare({
 
 var CRON_BEGIN = '# BEGIN fakehttp scheduled restart';
 var initActionPending = false;
+var stylesheetId = 'fakehttp-view-stylesheet';
+
+function loadStylesheet() {
+	var href = L.resource('view/fakehttp.css');
+	var link = document.getElementById(stylesheetId);
+
+	if (link) {
+		if (link.getAttribute('href') !== href)
+			link.setAttribute('href', href);
+		return;
+	}
+
+	link = document.createElement('link');
+	link.id = stylesheetId;
+	link.rel = 'stylesheet';
+	link.href = href;
+	document.head.appendChild(link);
+}
 
 function escapeHTML(value) {
 	return String(value == null ? '' : value)
@@ -320,6 +337,8 @@ function renderActionGroup(actions, footer) {
 
 return view.extend({
 	load: function() {
+		loadStylesheet();
+
 		return Promise.all([
 			uci.load('fakehttp'),
 			L.resolveDefault(callServiceList('fakehttp'), {}),

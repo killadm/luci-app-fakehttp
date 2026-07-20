@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-fakehttp
 PKG_VERSION:=0.9.18+git20250627
-PKG_RELEASE:=11
+PKG_RELEASE:=12
 
 PKG_MAINTAINER:=FakeHTTP LuCI feed
 PKG_LICENSE:=GPL-3.0-or-later
