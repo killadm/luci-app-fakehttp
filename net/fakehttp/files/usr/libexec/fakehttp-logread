@@ -62,9 +62,39 @@ list_rotated_logs() {
 		tail -n "$limit"
 }
 
+get_file_size() {
+	stat -c %s "$1" 2>/dev/null || wc -c < "$1" 2>/dev/null || echo 0
+}
+
+list_log_files() {
+	local log_file="$1"
+	local rotate_count="$2"
+
+	list_rotated_logs "$log_file" "$rotate_count"
+	[ -f "$log_file" ] && echo "$log_file"
+}
+
+select_recent_log_files() {
+	local log_file="$1"
+	local rotate_count="$2"
+	local total=0 path size
+
+	list_log_files "$log_file" "$rotate_count" |
+		sed '1!G;h;$!d' |
+		while IFS= read -r path; do
+			[ -f "$path" ] || continue
+			size="$(get_file_size "$path")"
+			is_uint "$size" || size=0
+			printf '%s\n' "$path"
+			total=$((total + size))
+			[ "$total" -ge "$MAX_BYTES" ] && break
+		done |
+		sed '1!G;h;$!d'
+}
+
 read_file_log() {
 	local lines="$1"
-	local log_file rotate_count rotated_logs
+	local log_file rotate_count selected_logs
 
 	log_file="$(get_log_file)" || {
 		echo "文件日志未启用或路径无效"
@@ -72,18 +102,15 @@ read_file_log() {
 	}
 
 	rotate_count="$(get_log_rotate_count)"
-	rotated_logs="$(list_rotated_logs "$log_file" "$rotate_count")"
+	selected_logs="$(select_recent_log_files "$log_file" "$rotate_count")"
 
-	if [ ! -f "$log_file" ] && [ -z "$rotated_logs" ]; then
+	if [ -z "$selected_logs" ]; then
 		echo "日志文件不存在：$log_file"
 		return 0
 	fi
 
-	{
-		[ -n "$rotated_logs" ] && printf '%s\n' "$rotated_logs"
-		[ -f "$log_file" ] && echo "$log_file"
-	} | while IFS= read -r path; do
-		[ -f "$path" ] && cat "$path"
+	printf '%s\n' "$selected_logs" | while IFS= read -r path; do
+		[ -f "$path" ] && tail -c "$MAX_BYTES" "$path"
 	done 2>/dev/null | tail -c "$MAX_BYTES" | tail -n "$lines"
 }
 
