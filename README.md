@@ -19,7 +19,7 @@
 - 提供 iptables 兼容模式。
 - 支持 NFQUEUE 编号、fwmark、TTL、重复包、跳数估计等高级参数。
 - 支持每天、每周、按小时间隔定时重启。
-- 支持文件日志按大小自动轮转，LuCI 只读取最近日志片段，避免大日志拖慢页面。
+- 支持 FakeHTTP 内置异步文件日志线程与按大小自动轮转，LuCI 只读取最近日志片段，避免大日志拖慢页面。
 - LuCI 页面提供状态查看、启动、停止、重启、更新定时任务、清理残留规则和最近日志查看。
 
 ## 目标环境
@@ -105,6 +105,7 @@ opkg install fakehttp_*.ipk luci-app-fakehttp_*.ipk
 - `libnetfilter-queue`
 - `libnfnetlink`
 - `libmnl`
+- `libpthread`
 - `nftables`
 - `kmod-nfnetlink-queue`
 - `kmod-nft-queue`
@@ -130,9 +131,9 @@ LuCI -> 服务 -> FakeHTTP
 - `enabled`：是否启用服务。
 - `interface_mode`：`custom` 指定接口，`all` 全部接口。
 - `interfaces`：指定接口列表，默认 `wan`。
-- `log_file`：FakeHTTP 文件日志，必须是 `/var/log`、`/mnt` 或 `/opt` 下的绝对文件路径，不能包含 `..` 或指向符号链接，默认 `/var/log/fakehttp/fakehttp.log`。
-- `log_max_size_kb`：单个文件日志达到该大小后轮转，默认 `512` KB。
-- `log_rotate_count`：保留的轮转日志份数，默认 `3`。
+- `log_file`：FakeHTTP 文件日志，必须是 `/var/log`、`/mnt` 或 `/opt` 下的绝对文件路径，不能包含 `..` 或指向符号链接，默认 `/var/log/fakehttp/fakehttp.log`；留空时不传递 `-w`，日志输出到 stderr。
+- `log_max_size`：对应 `--log-max-size`，支持纯数字字节数或 `K`、`M`、`G` 后缀，默认 `1M`；设置为 `0` 表示关闭内置轮转。
+- `log_rotate_count`：对应 `--log-rotate`，保留的轮转日志份数，默认 `3`；设置为 `0` 表示超过大小后不保留历史日志。
 - `direction`：`both`、`inbound`、`outbound`。
 - `ip_family`：`both`、`ipv4`、`ipv6`。
 - `queue_num`：NFQUEUE 编号，默认 `100`。
@@ -197,9 +198,14 @@ config filter
 /etc/init.d/fakehttp stop
 /etc/init.d/fakehttp restart
 /etc/init.d/fakehttp update_cron
-/etc/init.d/fakehttp rotate_log
 /etc/init.d/fakehttp cleanup_rules
 ```
+
+## 日志写入与轮转
+
+配置 `log_file` 后，init 脚本会向 FakeHTTP 传递 `-w <file>`，FakeHTTP 会启用异步文件日志线程。主处理线程只负责格式化日志并写入队列，实际文件写入、flush、大小检查和轮转由日志线程完成。
+
+默认单个日志文件达到 `1M` 后轮转，保留 `3` 份历史日志。轮转文件名格式为 `<logpath>.YYYYmmdd-HHMMSS`，同一秒内多次轮转时会追加数字后缀。`log_max_size=0` 会关闭内置轮转，`log_rotate_count=0` 表示超过大小后不保留历史日志。
 
 ## 定时重启
 
@@ -223,7 +229,6 @@ config filter
 - 默认使用 nftables；只有在兼容需求明确时才建议开启 iptables 模式。
 - 如果修改了 NFQUEUE 编号、fwmark 或防火墙相关设置，建议重启服务后检查规则是否生效。
 - `cleanup_rules` 只清理 FakeHTTP 自己创建的 nftables/iptables 规则。
-- 升级安装时如果看到 `resolve_conffiles` 提示，表示 opkg 发现本机已有 `/etc/config/fakehttp`，因此保护用户配置。安装脚本会保留现有配置并补齐缺失默认项；如果 `/etc/config/fakehttp-opkg` 未被接管为主配置，会保留该文件供手动对比。
 
 ## 许可证
 
