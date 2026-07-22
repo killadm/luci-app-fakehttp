@@ -196,6 +196,7 @@ validate_log_rotation_config() {
 update_cron() {
 	local enabled scheduled_restart restart_mode restart_time restart_weekday restart_interval_hours
 	local hour minute cron_line
+	local interval_stamp=0
 
 	config_load "$CONFIG"
 	config_get_bool enabled "$SECTION" enabled 0
@@ -205,11 +206,10 @@ update_cron() {
 	config_get restart_weekday "$SECTION" restart_weekday "0"
 	config_get restart_interval_hours "$SECTION" restart_interval_hours "24"
 
-	mkdir -p "$(dirname "$CRON_FILE")"
-	touch "$CRON_FILE"
-	remove_cron_block
-
 	if [ "$enabled" -ne 1 ]; then
+		mkdir -p "$(dirname "$CRON_FILE")"
+		touch "$CRON_FILE"
+		remove_cron_block
 		cron_reload
 		return 0
 	fi
@@ -243,8 +243,8 @@ update_cron() {
 					cron_reload
 					return 1
 				}
-				update_interval_stamp
 				cron_line="0 * * * * $SCHEDULE_HELPER interval >/dev/null 2>&1"
+				interval_stamp=1
 				;;
 			*)
 				log_error "invalid restart_mode: $restart_mode"
@@ -254,7 +254,11 @@ update_cron() {
 		esac
 	fi
 
+	mkdir -p "$(dirname "$CRON_FILE")"
+	touch "$CRON_FILE"
+	remove_cron_block
 	append_cron_block "$CRON_BEGIN" "$cron_line" "$CRON_END"
+	[ "$interval_stamp" -eq 1 ] && update_interval_stamp
 
 	cron_reload
 }
