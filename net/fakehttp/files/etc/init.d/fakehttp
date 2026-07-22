@@ -322,7 +322,13 @@ resolve_interface() {
 		}
 	fi
 
-	echo "$input"
+	if [ -d "/sys/class/net/$input" ]; then
+		echo "$input"
+		return 0
+	fi
+
+	log_error "unable to resolve interface: $1"
+	return 1
 }
 
 validate_payload_section() {
@@ -592,7 +598,7 @@ prepare_filter_file() {
 
 validate_start_config() {
 	local interface_mode interfaces direction ip_family queue_num fwmark fwmask repeat ttl
-	local dynamic_pct disable_hop_estimation log_file log_max_size log_rotate_count
+	local dynamic_pct disable_hop_estimation log_file log_max_size log_rotate_count iface
 
 	config_get interface_mode "$SECTION" interface_mode "custom"
 	config_get interfaces "$SECTION" interfaces
@@ -609,9 +615,23 @@ validate_start_config() {
 	config_get log_max_size "$SECTION" log_max_size "$DEFAULT_LOG_MAX_SIZE"
 	config_get log_rotate_count "$SECTION" log_rotate_count "$DEFAULT_LOG_ROTATE_COUNT"
 
-	if [ "$interface_mode" != "all" ] && [ -z "$interfaces" ]; then
+	case "$interface_mode" in
+		all|custom) ;;
+		*)
+			log_error "invalid interface_mode: $interface_mode"
+			return 1
+			;;
+	esac
+
+	if [ "$interface_mode" = "custom" ] && [ -z "$interfaces" ]; then
 		log_error "at least one interface is required"
 		return 1
+	fi
+
+	if [ "$interface_mode" = "custom" ]; then
+		for iface in $interfaces; do
+			resolve_interface "$iface" >/dev/null || return 1
+		done
 	fi
 
 	validate_payloads || return 1
@@ -677,7 +697,7 @@ validate_start_config() {
 start_service() {
 	local enabled interface_mode interfaces iface
 	local direction ip_family queue_num fwmark fwmask repeat ttl dynamic_pct
-	local disable_hop_estimation skip_firewall use_iptables silent log_file filter_file
+	local disable_hop_estimation skip_firewall use_iptables silent log_file filter_file resolved_iface
 	local log_max_size log_rotate_count
 
 	config_load "$CONFIG"
@@ -734,7 +754,8 @@ start_service() {
 		append_arg "-a"
 	else
 		for iface in $interfaces; do
-			append_arg "-i" "$(resolve_interface "$iface")"
+			resolved_iface="$(resolve_interface "$iface")" || return 1
+			append_arg "-i" "$resolved_iface"
 		done
 	fi
 
