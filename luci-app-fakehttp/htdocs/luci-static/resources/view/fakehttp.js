@@ -159,9 +159,10 @@ function renderLogTabs(systemLog, fileLog) {
 			renderLogPanel(systemLog, 200)
 		])
 	]);
+	var wrapper = E('div', { 'class': 'fakehttp-log-tabs-wrap' }, [ tabs ]);
 
 	ui.tabs.initTabGroup(tabs.childNodes);
-	return tabs;
+	return wrapper;
 }
 
 function validateRange(min, max, message, allowEmpty) {
@@ -256,6 +257,89 @@ function isValidHostname(value) {
 	return labels.length > 0;
 }
 
+function validateFilterIpValue(value) {
+	var parts = String(value || '').split('/');
+	var addr = parts[0];
+	var prefix;
+
+	if (parts.length > 2 || !addr)
+		return false;
+
+	if (parts.length === 2) {
+		prefix = Number(parts[1]);
+		if (!/^[0-9]+$/.test(parts[1]))
+			return false;
+	}
+
+	if (isValidIPv4(addr))
+		return parts.length === 1 || (prefix >= 0 && prefix <= 32);
+
+	if (isValidIPv6(addr))
+		return parts.length === 1 || (prefix >= 0 && prefix <= 128);
+
+	return false;
+}
+
+function validateFilterPortValue(value) {
+	var parts = String(value || '').split('-');
+	var start, end;
+
+	if (parts.length > 2 || !/^[0-9]+$/.test(parts[0] || ''))
+		return false;
+
+	start = Number(parts[0]);
+	end = parts.length === 2 ? Number(parts[1]) : start;
+
+	if (parts.length === 2 && !/^[0-9]+$/.test(parts[1] || ''))
+		return false;
+
+	return start >= 1 && start <= 65535 && end >= 1 && end <= 65535 && start <= end;
+}
+
+function getSiblingOption(section, optionName) {
+	var children = section && section.children ? section.children : [];
+
+	for (var i = 0; i < children.length; i++) {
+		if (children[i].option === optionName)
+			return children[i];
+	}
+
+	return null;
+}
+
+function getSiblingFormValue(currentOpt, fallbackOpt, sectionId, optionName) {
+	var opt = getSiblingOption(currentOpt && currentOpt.section, optionName) || fallbackOpt;
+
+	return opt ? opt.formvalue(sectionId) : null;
+}
+
+function revalidateSiblingOption(currentOpt, sectionId, optionName) {
+	var opt = getSiblingOption(currentOpt && currentOpt.section, optionName);
+
+	if (opt)
+		opt.isValid(sectionId);
+}
+
+function validateFilterValue(typeOpt) {
+	return function(sectionId, value) {
+		var type = getSiblingFormValue(this, typeOpt, sectionId, 'type') || 'ip';
+
+		if (!value)
+			return '请填写匹配值';
+
+		if (/[\s#]/.test(value) || !/^[A-Za-z0-9:./-]+$/.test(value))
+			return '匹配值不能包含空白、# 或特殊字符';
+
+		if (type === 'ip' && !validateFilterIpValue(value))
+			return '请输入有效的 IPv4、IPv6 或 CIDR';
+
+		if (type === 'port' && !validateFilterPortValue(value))
+			return '请输入 1-65535 的端口或端口范围';
+
+		return true;
+	};
+}
+
 function validateLogPath(sectionId, value) {
 	if (!value)
 		return true;
@@ -339,23 +423,24 @@ return view.extend({
 	load: function() {
 		loadStylesheet();
 
-		return Promise.all([
-			uci.load('fakehttp'),
-			L.resolveDefault(callServiceList('fakehttp'), {}),
-			L.resolveDefault(fs.read('/etc/crontabs/root'), ''),
-			L.resolveDefault(fs.exec('/usr/libexec/fakehttp-logread', [ 'system', '200' ]), { stdout: '' }),
-			L.resolveDefault(fs.exec('/usr/libexec/fakehttp-logread', [ 'file', '200' ]), { stdout: '' })
-		]);
+		return uci.load('fakehttp').then(function() {
+			return Promise.all([
+				L.resolveDefault(callServiceList('fakehttp'), {}),
+				L.resolveDefault(fs.read('/etc/crontabs/root'), ''),
+				L.resolveDefault(fs.exec('/usr/libexec/fakehttp-logread', [ 'system', '200' ]), { stdout: '' }),
+				L.resolveDefault(fs.exec('/usr/libexec/fakehttp-logread', [ 'file', '200' ]), { stdout: '' })
+			]);
+		});
 	},
 
 	render: function(data) {
-		var services = data[1];
+		var services = data[0];
 		var serviceEnabled = uci.get('fakehttp', 'main', 'enabled') === '1';
 		var serviceStatus = getServiceStatus(services);
-		var crontab = data[2] || '';
-		var logOutput = data[3] && data[3].stdout ? data[3].stdout : '';
-		var fileLog = data[4] && data[4].stdout ? data[4].stdout : '';
-		var m, s, p, o, enabledOpt, ifaceModeOpt, payloadTypeOpt, noHop;
+		var crontab = data[1] || '';
+		var logOutput = data[2] && data[2].stdout ? data[2].stdout : '';
+		var fileLog = data[3] && data[3].stdout ? data[3].stdout : '';
+		var m, s, p, f, o, enabledOpt, ifaceModeOpt, payloadTypeOpt, filterTypeOpt, noHop;
 
 		m = new form.Map('fakehttp', 'FakeHTTP');
 
@@ -442,12 +527,15 @@ return view.extend({
 		payloadTypeOpt.value('custom', '二进制文件 (-b)');
 		payloadTypeOpt.default = 'http';
 		payloadTypeOpt.rmempty = false;
+		payloadTypeOpt.onchange = function(ev, sectionId) {
+			revalidateSiblingOption(this, sectionId, 'value');
+		};
 
 		o = p.option(form.Value, 'value', '值');
 		o.placeholder = 'www.speedtest.cn';
 		o.rmempty = true;
 		o.validate = function(sectionId, value) {
-			var type = payloadTypeOpt.formvalue(sectionId) || 'http';
+			var type = getSiblingFormValue(this, payloadTypeOpt, sectionId, 'type') || 'http';
 
 			if (!value && enabledOpt.formvalue('main') === '1')
 				return '请填写负载值';
@@ -465,6 +553,31 @@ return view.extend({
 
 			return true;
 		};
+
+		f = m.section(form.GridSection, 'filter', '过滤规则');
+		f.anonymous = true;
+		f.addremove = true;
+		f.addbtntitle = '添加规则';
+
+		o = f.option(form.ListValue, 'action', '动作');
+		o.value('allow', '白名单');
+		o.value('deny', '黑名单');
+		o.default = 'allow';
+		o.rmempty = false;
+
+		filterTypeOpt = f.option(form.ListValue, 'type', '类型');
+		filterTypeOpt.value('ip', 'IP / CIDR');
+		filterTypeOpt.value('port', '端口 / 范围');
+		filterTypeOpt.default = 'ip';
+		filterTypeOpt.rmempty = false;
+		filterTypeOpt.onchange = function(ev, sectionId) {
+			revalidateSiblingOption(this, sectionId, 'value');
+		};
+
+		o = f.option(form.Value, 'value', '匹配值');
+		o.placeholder = '1.2.3.4/24、2001:db8::/32 或 5000-6000';
+		o.rmempty = false;
+		o.validate = validateFilterValue(filterTypeOpt);
 
 		o = s.taboption('advanced', form.Value, 'queue_num', 'NFQUEUE 编号');
 		o.default = '100';

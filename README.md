@@ -4,7 +4,7 @@
 
 本仓库提供一个完整 feed，包含：
 
-- `fakehttp`：从上游 [MikeWang000000/FakeHTTP](https://github.com/MikeWang000000/FakeHTTP) 构建二进制程序。
+- `fakehttp`：基于 [killadm/FakeHTTP](https://github.com/killadm/FakeHTTP) 的构建包。
 - `luci-app-fakehttp`：中文 LuCI 管理界面。
 - procd 服务脚本、UCI 默认配置、定时重启任务和 GitHub Actions 自动构建。
 
@@ -14,6 +14,7 @@
 - 支持指定接口或全部接口。
 - 支持入站、出站、双向处理。
 - 支持 IPv4、IPv6、双栈模式。
+- 支持 IP/CIDR 与端口范围黑白名单过滤规则。
 - 默认使用 nftables，适配 OpenWrt/ImmortalWrt 24.10 的 firewall4。
 - 提供 iptables 兼容模式。
 - 支持 NFQUEUE 编号、fwmark、TTL、重复包、跳数估计等高级参数。
@@ -170,6 +171,25 @@ config payload
 
 FakeHTTP 会轮换使用这些 payload。重复项会原样保留，可通过重复添加同一主机名或文件调整出现比例。
 
+过滤规则使用独立的 `config filter` 节：
+
+```text
+config filter
+	option action 'allow'
+	option type 'ip'
+	option value '1.2.3.0/24'
+
+config filter
+	option action 'deny'
+	option type 'port'
+	option value '12345'
+```
+
+- `action`：`allow` 为白名单规则，`deny` 为黑名单规则。
+- `type`：`ip` 支持 IPv4、IPv6 和 CIDR；`port` 支持单端口或 `5000-6000` 范围。
+- `value`：匹配源或目标 IP/端口；黑名单优先于白名单。
+- 过滤规则不会阻断真实流量，只限制哪些连接生成 FakeHTTP 混淆包。
+
 服务管理：
 
 ```sh
@@ -211,4 +231,4 @@ FakeHTTP 会轮换使用这些 payload。重复项会原样保留，可通过重
 
 FakeHTTP 上游项目遵循 GPL-3.0-or-later，见：
 
-https://github.com/MikeWang000000/FakeHTTP
+https://github.com/killadm/FakeHTTP

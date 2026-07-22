@@ -1,13 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fakehttp
-PKG_VERSION:=0.9.18+git20250627
-PKG_RELEASE:=8
+PKG_VERSION:=0.9.18+git20260722
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/MikeWang000000/FakeHTTP.git
-PKG_SOURCE_DATE:=2025-06-27
-PKG_SOURCE_VERSION:=84c3b1529cf809cd8913fd767039f5e977928eb5
+PKG_SOURCE_URL:=https://github.com/killadm/FakeHTTP.git
+PKG_SOURCE_DATE:=2026-07-22
+PKG_SOURCE_VERSION:=cefb1225dae230e3b29703b898e5d0b1248f2aad
 PKG_MIRROR_HASH:=skip
 
 PKG_MAINTAINER:=FakeHTTP LuCI feed
@@ -21,7 +21,7 @@ define Package/fakehttp
   CATEGORY:=Network
   SUBMENU:=Firewall
   TITLE:=Obfuscate TCP connections into HTTP with NFQUEUE
-  URL:=https://github.com/MikeWang000000/FakeHTTP
+  URL:=https://github.com/killadm/FakeHTTP
   DEPENDS:=+libnetfilter-queue +libnfnetlink +libmnl +nftables +kmod-nfnetlink-queue +kmod-nft-queue
 endef
 
