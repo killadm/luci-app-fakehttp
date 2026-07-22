@@ -775,6 +775,17 @@ start_service() {
 }
 
 reload_service() {
+	local enabled
+
+	config_load "$CONFIG"
+	config_get_bool enabled "$SECTION" enabled 0
+	if [ "$enabled" -eq 1 ]; then
+		validate_start_config || {
+			log_error "reload failed: invalid service configuration"
+			return 1
+		}
+	fi
+
 	update_cron || {
 		log_error "reload failed: unable to update cron tasks"
 		return 1
