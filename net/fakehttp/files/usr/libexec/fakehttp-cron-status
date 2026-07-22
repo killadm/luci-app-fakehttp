@@ -1,0 +1,18 @@
+#!/bin/sh
+
+CRON_FILE="/etc/crontabs/root"
+CRON_BEGIN="# BEGIN fakehttp scheduled restart"
+
+[ -f "$CRON_FILE" ] || {
+	echo "inactive"
+	exit 0
+}
+
+while IFS= read -r line; do
+	if [ "$line" = "$CRON_BEGIN" ]; then
+		echo "active"
+		exit 0
+	fi
+done < "$CRON_FILE"
+
+echo "inactive"

@@ -7,8 +7,8 @@
 				"service": [ "list" ]
 			},
 			"file": {
-				"/etc/crontabs/root": [ "read" ],
-				"/usr/libexec/fakehttp-logread": [ "exec" ]
+				"/usr/libexec/fakehttp-logread": [ "exec" ],
+				"/usr/libexec/fakehttp-cron-status": [ "exec" ]
 			}
 		},
 		"write": {

@@ -14,7 +14,6 @@ var callServiceList = rpc.declare({
 	expect: { '': {} }
 });
 
-var CRON_BEGIN = '# BEGIN fakehttp scheduled restart';
 var initActionPending = false;
 var stylesheetId = 'fakehttp-view-stylesheet';
 
@@ -78,14 +77,14 @@ function getWeekdayText(value) {
 	})[value] || '周日';
 }
 
-function getScheduleText(crontab) {
+function getScheduleText(cronStatus) {
 	var enabled = uci.get('fakehttp', 'main', 'scheduled_restart') === '1';
 	var serviceEnabled = uci.get('fakehttp', 'main', 'enabled') === '1';
 	var mode = uci.get('fakehttp', 'main', 'restart_mode') || 'daily';
 	var time = uci.get('fakehttp', 'main', 'restart_time') || '04:00';
 	var weekday = uci.get('fakehttp', 'main', 'restart_weekday') || '0';
 	var interval = uci.get('fakehttp', 'main', 'restart_interval_hours') || '24';
-	var active = crontab && crontab.indexOf(CRON_BEGIN) >= 0;
+	var active = cronStatus === 'active';
 	var text;
 
 	if (!enabled)
@@ -433,7 +432,7 @@ return view.extend({
 		return uci.load('fakehttp').then(function() {
 			return Promise.all([
 				L.resolveDefault(callServiceList('fakehttp'), {}),
-				L.resolveDefault(fs.read('/etc/crontabs/root'), ''),
+				L.resolveDefault(fs.exec('/usr/libexec/fakehttp-cron-status', []), { stdout: 'inactive' }),
 				L.resolveDefault(fs.exec('/usr/libexec/fakehttp-logread', [ 'system', '200' ]), { stdout: '' }),
 				L.resolveDefault(fs.exec('/usr/libexec/fakehttp-logread', [ 'file', '200' ]), { stdout: '' })
 			]);
@@ -444,7 +443,7 @@ return view.extend({
 		var services = data[0];
 		var serviceEnabled = uci.get('fakehttp', 'main', 'enabled') === '1';
 		var serviceStatus = getServiceStatus(services);
-		var crontab = data[1] || '';
+		var cronStatus = data[1] && data[1].stdout ? data[1].stdout.trim() : 'inactive';
 		var logOutput = data[2] && data[2].stdout ? data[2].stdout : '';
 		var fileLog = data[3] && data[3].stdout ? data[3].stdout : '';
 		var m, s, p, f, o, enabledOpt, ifaceModeOpt, payloadTypeOpt, filterTypeOpt, noHop;
@@ -484,7 +483,7 @@ return view.extend({
 			return renderActionGroup([
 				{ title: '更新定时任务', style: 'apply', action: 'update_cron', success: '定时任务已更新', label: '更新', disabled: !serviceEnabled },
 				{ title: '清理残留规则', style: 'remove', action: 'cleanup_rules', success: '残留规则清理完成', label: '清理', disabled: serviceStatus.running }
-			], '定时重启：' + getScheduleText(crontab));
+			], '定时重启：' + getScheduleText(cronStatus));
 		};
 
 		ifaceModeOpt = s.taboption('basic', form.ListValue, 'interface_mode', '接口范围');
@@ -691,7 +690,7 @@ return view.extend({
 		o = s.taboption('schedule', form.DummyValue, '_schedule_state', '当前计划');
 		o.rawhtml = true;
 		o.cfgvalue = function() {
-			return '<div class="cbi-value-field">' + escapeHTML(getScheduleText(crontab)) + '</div>';
+			return '<div class="cbi-value-field">' + escapeHTML(getScheduleText(cronStatus)) + '</div>';
 		};
 
 		o = s.taboption('logs', form.Flag, 'silent', '静默模式');

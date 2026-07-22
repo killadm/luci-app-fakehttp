@@ -56,6 +56,7 @@ define Package/fakehttp/install
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-scheduled-restart $(1)/usr/libexec/fakehttp-scheduled-restart
 	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-logread $(1)/usr/libexec/fakehttp-logread
+	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-cron-status $(1)/usr/libexec/fakehttp-cron-status
 	$(INSTALL_DIR) $(1)/usr/share/fakehttp
 	$(INSTALL_DATA) ./files/usr/share/fakehttp/functions.sh $(1)/usr/share/fakehttp/functions.sh
 endef
