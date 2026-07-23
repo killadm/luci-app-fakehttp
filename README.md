@@ -134,6 +134,9 @@ LuCI -> 服务 -> FakeHTTP
 - `log_file`：FakeHTTP 文件日志，必须是 `/var/log`、`/mnt` 或 `/opt` 下的绝对文件路径，不能包含 `..` 或指向符号链接，默认 `/var/log/fakehttp/fakehttp.log`；留空时不传递 `-w`，日志输出到 stderr。
 - `log_max_size`：对应 `--log-max-size`，支持纯数字字节数或 `K`、`M`、`G` 后缀，默认 `1M`；设置为 `0` 表示关闭内置轮转。
 - `log_rotate_count`：对应 `--log-rotate`，保留的轮转日志份数，默认 `3`；设置为 `0` 表示超过大小后不保留历史日志。
+- `silent`：静默模式，默认开启；关闭会逐包输出日志，除排查问题时外，日常使用建议开启。
+- `skip_firewall`：跳过自动维护防火墙规则；慎选，除非必须自己维护外部防火墙规则。
+- `use_iptables`：使用 iptables 兼容模式；慎选，建议优先使用 nftables。
 - `direction`：`both`、`inbound`、`outbound`。
 - `ip_family`：`both`、`ipv4`、`ipv6`。
 - `queue_num`：NFQUEUE 编号，默认 `100`。
@@ -190,6 +193,14 @@ config filter
 - `type`：`ip` 支持 IPv4、IPv6 和 CIDR；`port` 支持单端口或 `5000-6000` 范围。
 - `value`：匹配源或目标 IP/端口；黑名单优先于白名单。
 - 过滤规则不会阻断真实流量，只限制哪些连接生成 FakeHTTP 混淆包。
+
+黑白名单匹配顺序：
+
+- 只有黑名单：默认都处理，命中 `deny` 的不处理。
+- 只有 IP 白名单：只处理源 IP 或目的 IP 命中的流量。
+- 只有端口白名单：只处理源端口或目的端口命中的流量。
+- 同时有 IP 白名单和端口白名单：必须 IP 命中且端口命中才处理。
+- 同时命中 `allow` 和 `deny`：按 `deny` 处理，不生成 FakeHTTP 混淆包。
 
 服务管理：
 

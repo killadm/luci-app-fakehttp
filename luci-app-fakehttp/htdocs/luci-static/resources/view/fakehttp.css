@@ -29,6 +29,15 @@
 	margin-top: .5em;
 }
 
+.fakehttp-filter-help ul {
+	margin: .25em 0 0 1.25em;
+	padding-left: 1.25em;
+}
+
+.fakehttp-filter-help li {
+	margin: .15em 0;
+}
+
 .fakehttp-log-value,
 .fakehttp-log-field {
 	display: block;
