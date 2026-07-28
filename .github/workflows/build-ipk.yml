@@ -104,6 +104,14 @@ jobs:
             echo "::error::make packages failed; full log is attached as build.log"
             tail -n 300 "${log}" || true
             echo "::endgroup::"
+            verbose_log="${GITHUB_WORKSPACE}/build-logs/build-verbose.log"
+            echo "::group::make package/fakehttp/compile V=s"
+            make package/fakehttp/clean >/dev/null 2>&1 || true
+            make -j1 V=s package/fakehttp/compile >"${verbose_log}" 2>&1 || true
+            tail -n 300 "${verbose_log}" || true
+            echo "::endgroup::"
+            mkdir -p "${GITHUB_WORKSPACE}/build-logs/sdk-logs"
+            cp -a logs/. "${GITHUB_WORKSPACE}/build-logs/sdk-logs/" 2>/dev/null || true
             exit "${rc}"
           fi
 
