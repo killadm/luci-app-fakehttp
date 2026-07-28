@@ -1,8 +1,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fakehttp
-PKG_VERSION:=0.9.18+git20260722
-PKG_RELEASE:=2
+PKG_VERSION:=0.9.18
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/killadm/FakeHTTP.git
@@ -22,7 +22,7 @@ define Package/fakehttp
   SUBMENU:=Firewall
   TITLE:=Obfuscate TCP connections into HTTP with NFQUEUE
   URL:=https://github.com/killadm/FakeHTTP
-  DEPENDS:=+libpthread +libnetfilter-queue +libnfnetlink +libmnl +nftables +kmod-nfnetlink-queue +kmod-nft-queue
+  DEPENDS:=+ca-bundle +uclient-fetch +libpthread +libnetfilter-queue +libnfnetlink +libmnl +nftables +kmod-nfnetlink-queue +kmod-nft-queue
 endef
 
 define Package/fakehttp/description
@@ -56,7 +56,7 @@ define Package/fakehttp/install
 	$(INSTALL_DIR) $(1)/usr/libexec
 	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-scheduled-restart $(1)/usr/libexec/fakehttp-scheduled-restart
 	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-logread $(1)/usr/libexec/fakehttp-logread
-	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-cron-status $(1)/usr/libexec/fakehttp-cron-status
+	$(INSTALL_BIN) ./files/usr/libexec/fakehttp-update $(1)/usr/libexec/fakehttp-update
 	$(INSTALL_DIR) $(1)/usr/share/fakehttp
 	$(INSTALL_DATA) ./files/usr/share/fakehttp/functions.sh $(1)/usr/share/fakehttp/functions.sh
 endef

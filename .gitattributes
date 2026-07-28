@@ -1,1 +1,13 @@
-* text=auto eol=lf
+.gitattributes text eol=lf
+README.md text eol=lf
+.github/workflows/*.yml text eol=lf
+**/Makefile text eol=lf
+luci-app-fakehttp/htdocs/luci-static/resources/view/fakehttp.css text eol=lf
+luci-app-fakehttp/htdocs/luci-static/resources/view/fakehttp.js text eol=lf
+luci-app-fakehttp/root/usr/share/luci/menu.d/*.json text eol=lf
+luci-app-fakehttp/root/usr/share/rpcd/acl.d/*.json text eol=lf
+net/fakehttp/files/etc/init.d/* text eol=lf
+net/fakehttp/files/etc/uci-defaults/* text eol=lf
+net/fakehttp/files/usr/libexec/* text eol=lf
+net/fakehttp/files/usr/libexec/fakehttp-update text eol=lf
+net/fakehttp/files/usr/share/fakehttp/*.sh text eol=lf

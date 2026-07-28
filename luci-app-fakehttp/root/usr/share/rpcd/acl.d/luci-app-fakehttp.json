@@ -7,14 +7,15 @@
 				"service": [ "list" ]
 			},
 			"file": {
-				"/usr/libexec/fakehttp-logread": [ "exec" ],
-				"/usr/libexec/fakehttp-cron-status": [ "exec" ]
+				"/etc/crontabs/root": [ "read" ],
+				"/usr/libexec/fakehttp-logread": [ "exec" ]
 			}
 		},
 		"write": {
 			"uci": [ "fakehttp" ],
 			"file": {
-				"/etc/init.d/fakehttp": [ "exec" ]
+				"/etc/init.d/fakehttp": [ "exec" ],
+				"/usr/libexec/fakehttp-update": [ "exec" ]
 			}
 		}
 	}
